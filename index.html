@@ -476,6 +476,51 @@
             color: #4444ff;
         }
 
+        .qi-bar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 4px;
+        }
+
+        .qi-label {
+            font-size: 10px;
+            color: #aaa;
+            text-shadow: 0 0 3px currentColor;
+        }
+
+        .qi-bar {
+            width: 200px;
+            height: 10px;
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .qi-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4488ff, #00ccff);
+            transition: width 0.2s ease;
+        }
+
+        .qi-bar-fill.full {
+            background: linear-gradient(90deg, #00ffff, #0088ff);
+            animation: qiFlash 0.4s ease-in-out infinite;
+            box-shadow: 0 0 8px #00ffff;
+        }
+
+        @keyframes qiFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .qi-value {
+            font-size: 10px;
+            color: #888;
+            text-align: right;
+        }
+
         .game-controls {
             margin-top: 20px;
             display: none;
@@ -738,6 +783,13 @@
                     <div id="healthBar1" class="health-bar-fill"></div>
                 </div>
                 <div class="health-value" id="healthValue1">100/100</div>
+                <div class="qi-bar-container">
+                    <div class="qi-label">气</div>
+                    <div class="qi-bar">
+                        <div id="qiBar1" class="qi-bar-fill"></div>
+                    </div>
+                    <div class="qi-value" id="qiValue1">100/100</div>
+                </div>
             </div>
 
             <div class="health-bar-container player2">
@@ -746,12 +798,19 @@
                     <div id="healthBar2" class="health-bar-fill"></div>
                 </div>
                 <div class="health-value" id="healthValue2">100/100</div>
+                <div class="qi-bar-container">
+                    <div class="qi-label">气</div>
+                    <div class="qi-bar">
+                        <div id="qiBar2" class="qi-bar-fill"></div>
+                    </div>
+                    <div class="qi-value" id="qiValue2">100/100</div>
+                </div>
             </div>
         </div>
 
         <div class="game-over" id="gameOver">
             <h2 class="winner-red" id="winnerText">PLAYER 1 WINS!</h2>
-            <button onclick="restartGame()">再玩一次</button>
+            <button id="rematchBtn" onclick="handleRematch()">再玩一次</button>
             <button onclick="backToMenu()">返回菜单</button>
             <button onclick="exportGameLog()" style="background: #666; margin-top: 15px;">导出日志</button>
         </div>
@@ -819,9 +878,9 @@
         
         // 攻击/技能定义
         const MOVES = {
-            punch:    { type: 'melee',     windup: 30,  cooldown: 50,  range: 65,  damage: 6,  knockback: 15,  name: '拳'     },
-            kick:     { type: 'melee',     windup: 45,  cooldown: 60,  range: 95,  damage: 9,  knockback: 25,  name: '腿'     },
-            fireball: { type: 'projectile', windup: 50,  cooldown: 100, speed: 10,  damage: 10, knockback: 30,  name: '气功弹', size: 20 }
+            punch:    { type: 'melee',     windup: 6,  active: 3,  recovery: 18, range: 65,  damage: 6,  knockback: 15,  name: '拳'     },
+            kick:     { type: 'melee',     windup: 10, active: 5,  recovery: 25, range: 95,  damage: 9,  knockback: 25,  name: '腿'     },
+            fireball: { type: 'projectile', windup: 14, active: 0, recovery: 50, speed: 10,  damage: 10, knockback: 30,  name: '气功弹', size: 20 }
         };
         
         // 角色定义 - 所有属性集中管理
@@ -900,11 +959,29 @@
         let bgOffset1 = 0, bgOffset2 = 0, bgOffset3 = 0;
         let screenShake = { x: 0, y: 0, intensity: 0 };
         let fireballs = [];
+        let particles = [];
+
+        function spawnImpactParticles(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 6;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 2,
+                    life: 10 + Math.random() * 12,
+                    maxLife: 22,
+                    size: 2 + Math.random() * 3,
+                    color: Math.random() < 0.5 ? '#ff8800' : '#ffff00'
+                });
+            }
+        }
 
         let audioContext = null;
         let isMuted = false;
         let musicPlaying = false;
         let gameMusicPlaying = false;
+        let gameOverMusicPlaying = false;
         const titleMelody = [
             { freq: 262, dur: 0.3 }, { freq: 330, dur: 0.3 }, { freq: 392, dur: 0.3 },
             { freq: 523, dur: 0.5 }, { freq: 392, dur: 0.3 }, { freq: 330, dur: 0.3 },
@@ -929,6 +1006,10 @@
             { freq: 349, dur: 0.2 }, { freq: 440, dur: 0.2 }, { freq: 523, dur: 0.2 }, { freq: 698, dur: 0.4 },
             { freq: 523, dur: 0.2 }, { freq: 440, dur: 0.2 }, { freq: 349, dur: 0.4 }
         ];
+        const gameOverMelody = [
+            { freq: 392, dur: 0.6 }, { freq: 349, dur: 0.6 }, { freq: 330, dur: 0.6 }, { freq: 262, dur: 1.2 },
+            { freq: 330, dur: 0.6 }, { freq: 294, dur: 0.6 }, { freq: 262, dur: 1.6 }
+        ];
         let melodyIndex = 0, musicSpeed = 1, musicNoise = 0;
 
         let keys = {};
@@ -948,6 +1029,8 @@
         const SEND_INTERVAL_STATE = 250;
         let isGameActive = false;
         let skipAttackHit = false;
+        let prevKeys = {};
+        let rematchState = { myReady: false, oppReady: false };
         
         let messageCount = { sent: 0, received: 0, dropped: 0 };
         let lastMessageTime = 0;
@@ -957,81 +1040,67 @@
         let opponentTargetY = 0;
         let opponentDisplayX = 0;
         let opponentDisplayY = 0;
+        let lastQiValue = 0;
+        let lastQiSendTime = 0;
+        const SEND_INTERVAL_QI = 150;
+        let lastQiSent = 0;
+        
+        // 血量同步跟踪
+        let lastHealthValue = { player1: -1, player2: -1 };
+        let lastHealthSendTime = 0;
+        const SEND_INTERVAL_HEALTH = 200;
 
-        let gameLog = [];
-        let sessionStartTime = new Date().toISOString();
+        let gameFrame = 0;
         let syncLog = [];
-        let sentLog = [];
-        let recvLog = [];
-
-        const logSync = (direction, msgType, data, timestamp) => {
-            const entry = {
-                time: timestamp || Date.now(),
-                timeStr: new Date().toLocaleTimeString(),
-                direction: direction,
-                type: msgType,
-                data: JSON.parse(JSON.stringify(data))
-            };
-            syncLog.push(entry);
-            if (direction === 'SEND') sentLog.push(entry);
-            else recvLog.push(entry);
-            if (syncLog.length > 100) syncLog.shift();
-            if (sentLog.length > 50) sentLog.shift();
-            if (recvLog.length > 50) recvLog.shift();
-        };
-
-        const getSyncTableHTML = () => {
-            let text = '';
-            const roleTag = isHost ? '[HOST]' : '[CLIENT]';
-            syncLog.slice(-50).forEach(entry => {
-                const dir = entry.direction === 'SEND' ? '[SEND→]' : '[←RECV]';
-                const dataStr = JSON.stringify(entry.data);
-                text += `${roleTag} ${entry.timeStr} ${dir} ${entry.type}: ${dataStr}\n`;
-            });
-            return text;
-        };
-
-        const getSyncLogText = () => {
-            let text = '';
-            const roleTag = isHost ? '[HOST]' : '[CLIENT]';
-            syncLog.slice(-100).forEach(entry => {
-                const dir = entry.direction === 'SEND' ? '[SEND→]' : '[←RECV]';
-                const dataStr = JSON.stringify(entry.data);
-                text += `${roleTag} ${entry.timeStr} ${dir} ${entry.type}: ${dataStr}\n`;
-            });
-            return text;
-        };
 
         const debugLog = (msg) => {
             console.log('[DEBUG]', msg);
+        };
+        
+        let lastLogP1Health = -1;
+        let lastLogP2Health = -1;
+        let lastLogP1Qi = -1;
+        let lastLogP2Qi = -1;
+        const syncLogEntry = (type, detail) => {
+            if (!gameState) return;
+            
             const time = new Date().toLocaleTimeString();
-            const logEntry = `[${time}] ${msg}`;
-            gameLog.push(logEntry);
+            const p1h = Math.round(gameState.mechas.player1.health);
+            const p2h = Math.round(gameState.mechas.player2.health);
+            const p1q = Math.round(gameState.mechas.player1.qi);
+            const p2q = Math.round(gameState.mechas.player2.qi);
+            
+            // 只有当血量或气值发生变化或者是关键事件时才记录
+            const stateChanged = p1h !== lastLogP1Health || p2h !== lastLogP2Health || 
+                                  p1q !== lastLogP1Qi || p2q !== lastLogP2Qi ||
+                                  type.includes('game_over') || type.includes('hit') || type.includes('start');
+            
+            if (stateChanged) {
+                lastLogP1Health = p1h;
+                lastLogP2Health = p2h;
+                lastLogP1Qi = p1q;
+                lastLogP2Qi = p2q;
+                
+                const role = isHost ? 'H' : 'C';
+                const logMsg = `${role}|${time}|${type}|H${p1h},${p2h}|Q${p1q},${p2q}|${detail || ''}`;
+                console.log('[SYNC]', logMsg);
+                syncLog.push(logMsg);
+                if (syncLog.length > 200) syncLog.shift();
+            }
+        };
+
+        const getSyncLogText = () => {
+            const role = isHost ? 'HOST' : 'CLIENT';
+            return `=== ${role} LOG ===\n` + syncLog.join('\n');
         };
         
         const exportGameLog = () => {
-            const logData = {
-                sessionStart: sessionStartTime,
-                exportTime: new Date().toISOString(),
-                gameVersion: GAME_VERSION,
-                gameMode: gameMode,
-                clientRole: isHost ? '主机 (Host)' : '客户端 (Client)',
-                isHost: isHost,
-                myPlayerId: myPlayerId,
-                myPlayerColor: myPlayerId === 1 ? '红色 (Red)' : '蓝色 (Blue)',
-                opponentPlayerColor: myPlayerId === 1 ? '蓝色 (Blue)' : '红色 (Red)',
-                messageStats: messageCount,
-                syncLog: syncLog,
-                sentLog: sentLog,
-                recvLog: recvLog,
-                logs: gameLog
-            };
-            
-            const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
+            const logText = getSyncLogText();
+            const blob = new Blob([logText], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `mecha-fight-${isHost ? 'host' : 'client'}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+            a.download = `mecha-fight-${isHost ? 'host' : 'client'}-${new Date().toISOString().replace(/[:.]/g, '-')}.log`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -1371,149 +1440,285 @@
 
         function handlePeerData(data) {
             messageCount.received++;
-            logSync('RECV', data.type, data);
             debugLog(`处理数据: ${data.type}`);
-            if (data.type === 'game_state_sync') {
-                debugLog('!!! 收到 game_state_sync !!!');
-                debugLog(`isStart: ${data.isStart}, playerId: ${data.playerId}`);
-            }
-            switch(data.type) {
-                case 'ready':
-                    debugLog('收到对手ready信号');
-                    if (!isHost) {
+            if (isHost) {
+                // ========== 主机处理逻辑 ==========
+                const myNum = 'player1';
+                const oppNum = 'player2';
+                switch(data.type) {
+                    case 'ready':
+                        debugLog('收到对手ready信号');
+                        break;
+
+                    case 'game_state_sync':
+                        break;
+
+                    case 'input':
+                        opponentData = data;
+                        break;
+                        
+                    case 'position':
+                        // 主机只同步客机的位置、朝向、气值，绝不信任客机的血量！血量由主机决定
+                        if (!opponentData) opponentData = {};
+                        opponentData.x = data.x;
+                        opponentData.y = data.y;
+                        opponentData.facingRight = data.facingRight;
+                        opponentData.qi = data.qi;
+                        opponentData.isCharging = data.isCharging;
+                        // 更新客机的位置、朝向、气值
+                        if (gameState && gameState.mechas[oppNum]) {
+                            gameState.mechas[oppNum].x = data.x;
+                            gameState.mechas[oppNum].y = data.y;
+                            gameState.mechas[oppNum].facingRight = data.facingRight;
+                            gameState.mechas[oppNum].isCharging = data.isCharging;
+                            gameState.mechas[oppNum].qi = data.qi;
+                            // 注意：绝不更新 health！血量由主机权威决定！
+                        }
+                        break;
+                    
+                    case 'defense_update':
+                        debugLog(`[RECV] defense_update: ${data.isDefending}`);
+                        if (gameState && gameState.mechas[oppNum]) {
+                            gameState.mechas[oppNum].isDefending = data.isDefending;
+                        }
+                        break;
+
+                    case 'action_start':
+                        debugLog(`[RECV] action_start: ${data.actionType}`);
+                        if (gameState && gameState.mechas[oppNum]) {
+                            const opp = gameState.mechas[oppNum];
+                            const config = MOVES[data.actionType];
+                            opp.attackType = data.actionType;
+                            opp.state = 'attackWindup';
+                            opp.attackWindup = config ? config.windup : 30;
+                            opp.attackActive = config && config.type !== 'projectile' ? config.active : 0;
+                            opp.attackRecovery = config ? config.recovery : 0;
+                            opp.facingRight = data.facingRight;
+                        }
+                        break;
+
+                    case 'projectile_create':
+                        debugLog(`[RECV] projectile_create: ${data.projectileType}`);
+                        const baseCfg = MOVES[data.projectileType] || { size: 20, damage: 10, knockback: 30 };
+                        const isSuper = !!data.isSuper;
+                        fireballs.push({ 
+                            x: data.x, 
+                            y: data.y, 
+                            vx: data.vx, 
+                            owner: oppNum,
+                            size: isSuper ? baseCfg.size * 2 : baseCfg.size,
+                            damage: isSuper ? baseCfg.damage * 4 : baseCfg.damage,
+                            knockback: baseCfg.knockback,
+                            isSuper: isSuper
+                        });
+                        break;
+
+                    case 'game_over':
+                        debugLog(`收到游戏结束信号，赢家: ${data.winner}`);
+                        break;
+
+                    case 'rematch_request':
+                        rematchState.oppReady = true;
+                        if (rematchState.myReady) {
+                            const rBtn = document.getElementById('rematchBtn');
+                            rBtn.textContent = '双方已确认，开始...';
+                            rBtn.disabled = true;
+                            startOnlineRematch();
+                        } else {
+                            const rBtn = document.getElementById('rematchBtn');
+                            rBtn.textContent = '对手请求再战！点击接受';
+                            rBtn.disabled = false;
+                            rBtn.onclick = acceptRematch;
+                        }
+                        break;
+
+                    case 'rematch_accept':
+                        rematchState.oppReady = true;
+                        if (rematchState.myReady) {
+                            const rBtn = document.getElementById('rematchBtn');
+                            rBtn.textContent = '双方已确认，开始...';
+                            rBtn.disabled = true;
+                            startOnlineRematch();
+                        }
+                        break;
+                }
+            } else {
+                // ========== 客机处理逻辑 ==========
+                const myNum = 'player2';
+                const oppNum = 'player1';
+                switch(data.type) {
+                    case 'ready':
+                        debugLog('收到对手ready信号');
                         connection.send({ type: 'ready' });
-                    }
-                    break;
+                        break;
 
-                case 'game_state_sync':
-                    debugLog('收到游戏状态同步!');
-                    
-                    if (data.isStart) {
-                        debugLog('收到游戏开始信号!');
-                        if (data.playerId) {
-                            const oldPlayerId = myPlayerId;
-                            myPlayerId = data.playerId === 1 ? 2 : 1;
-                            debugLog(`本机被分配为: 玩家${myPlayerId} (原host是玩家${data.playerId})`);
-                        }
+                    case 'game_state_sync':
+                        debugLog('收到游戏状态同步!');
                         
-                        if (!gameState || gameState.gameStatus !== 'playing') {
-                            debugLog('初始化本地游戏状态...');
-                            const p1Char = data.player1Char || DEFAULT_CHAR_SELECTION.player1;
-                            const p2Char = data.player2Char || DEFAULT_CHAR_SELECTION.player2;
-                            initGameState(p1Char, p2Char);
-                            showGame();
-                            restartGame();
+                        if (data.isStart) {
+                            debugLog('收到游戏开始信号!');
+                            if (data.playerId) {
+                                const oldPlayerId = myPlayerId;
+                                myPlayerId = data.playerId === 1 ? 2 : 1;
+                                debugLog(`本机被分配为: 玩家${myPlayerId} (原host是玩家${data.playerId})`);
+                            }
+                            
+                            if (!gameState || gameState.gameStatus !== 'playing') {
+                                debugLog('初始化本地游戏状态...');
+                                const p1Char = data.player1Char || DEFAULT_CHAR_SELECTION.player1;
+                                const p2Char = data.player2Char || DEFAULT_CHAR_SELECTION.player2;
+                                initGameState(p1Char, p2Char);
+                                showGame();
+                                restartGame();
+                            }
+                            
+                            isGameActive = true;
+                            syncLogEntry('game_start', `playerId=${myPlayerId}`);
+                            debugLog('游戏已开始! isGameActive=true');
                         }
+                        break;
+
+                    case 'input':
+                        opponentData = data;
+                        break;
                         
-                        isGameActive = true;
-                        debugLog('游戏已开始! isGameActive=true');
-                    }
-                    break;
-
-                case 'input':
-                    opponentData = data;
-                    break;
+                    case 'position':
+                        if (!opponentData) opponentData = {};
+                        opponentData.x = data.x;
+                        opponentData.y = data.y;
+                        opponentData.facingRight = data.facingRight;
+                        opponentData.qi = data.qi;
+                        opponentData.isCharging = data.isCharging;
+                        break;
                     
-                case 'position':
-                    if (!opponentData) opponentData = {};
-                    opponentData.x = data.x;
-                    opponentData.y = data.y;
-                    opponentData.facingRight = data.facingRight;
-                    debugLog(`[RECV] position: x=${data.x}, y=${data.y}`);
-                    break;
-                    
-                case 'state':
-                    if (!opponentData) opponentData = {};
-                    opponentData.health = data.health;
-                    opponentData.state = data.state;
-                    opponentData.isDefending = data.isDefending;
-                    opponentData.attackType = data.attackType;
-                    opponentData.hitStun = data.hitStun;
-                    debugLog(`[RECV] state: health=${data.health}, state=${data.state}`);
-                    break;
-
-                case 'action_start':
-                    debugLog(`[RECV] action_start: ${data.actionType}`);
-                    const actionOppNum = myPlayerId === 1 ? 'player2' : 'player1';
-                    const actionOpp = gameState.mechas[actionOppNum];
-                    if (actionOpp) {
-                        const config = MOVES[data.actionType];
-                        actionOpp.attackType = data.actionType;
-                        actionOpp.state = 'attackWindup';
-                        actionOpp.attackWindup = config ? config.windup : 30;
-                        actionOpp.facingRight = data.facingRight;
-                    }
-                    break;
-
-                case 'defense_update':
-                    debugLog(`[RECV] defense_update: ${data.isDefending}`);
-                    const defenseOppNum = myPlayerId === 1 ? 'player2' : 'player1';
-                    const defenseOpp = gameState.mechas[defenseOppNum];
-                    if (defenseOpp) {
-                        defenseOpp.isDefending = data.isDefending;
-                    }
-                    break;
-
-                case 'projectile_create':
-                    debugLog(`[RECV] projectile_create: ${data.projectileType}`);
-                    const projOppNum = myPlayerId === 1 ? 'player2' : 'player1';
-                    fireballs.push({ 
-                        x: data.x, 
-                        y: data.y, 
-                        vx: data.vx, 
-                        owner: projOppNum,
-                        size: MOVES[data.projectileType]?.size || 20,
-                        damage: MOVES[data.projectileType]?.damage || 10,
-                        knockback: MOVES[data.projectileType]?.knockback || 30
-                    });
-                    break;
-
-                case 'game_over':
-                    debugLog(`收到游戏结束信号，赢家: ${data.winner}`);
-                    gameState.winner = data.winner === 1 ? 'player1' : 'player2';
-                    gameState.gameStatus = 'gameOver';
-                    showGameOver();
-                    break;
-                    
-                case 'health_update':
-                    debugLog(`收到血量更新: ${data.health}`);
-                    const oppNum = myPlayerId === 1 ? 'player2' : 'player1';
-                    if (gameState && gameState.mechas[oppNum]) {
-                        gameState.mechas[oppNum].health = data.health;
+                    case 'state_update':
+                        // 客机完全信任主机血量！只同步血量，气值各自本地控制（格斗游戏模式）
+                        if (data.p1Health !== undefined) gameState.mechas.player1.health = data.p1Health;
+                        if (data.p2Health !== undefined) gameState.mechas.player2.health = data.p2Health;
                         updateHealthUI();
-                    }
-                    break;
-                    
-                case 'action_hit':
-                    debugLog(`[RECV] action_hit: ${data.actionType} -> ${data.target}`);
-                    const hitTarget = gameState.mechas[data.target];
-                    if (hitTarget) {
-                        const config = MOVES[data.actionType] || { damage: 10, knockback: 30 };
-                        const hitChar = getChar(hitTarget.characterId);
-                        let dmg = config.damage;
-                        if (hitTarget.isDefending) dmg = Math.floor(dmg * hitChar.defenseReduction);
-                        hitTarget.health = Math.max(0, hitTarget.health - dmg);
-                        hitTarget.state = 'hit';
-                        hitTarget.hitStun = hitChar.hitStun;
-                        hitTarget.flashTimer = 48;
-                        hitTarget.knockbackVelX = data.facingRight ? config.knockback : -config.knockback;
-                        triggerScreenShake(dmg * 0.3);
-                        playHitSound();
-                        updateHealthUI();
-                        if (hitTarget.health <= 0) {
-                            gameState.winner = data.target;
-                            gameState.gameStatus = 'gameOver';
-                            showGameOver();
+                        updateQiUI();
+                        syncLogEntry('sync_state', 'rcv');
+                        break;
+                        
+                    case 'state':
+                        if (!opponentData) opponentData = {};
+                        opponentData.health = data.health;
+                        opponentData.state = data.state;
+                        opponentData.isDefending = data.isDefending;
+                        opponentData.attackType = data.attackType;
+                        opponentData.hitStun = data.hitStun;
+                        break;
+
+                    case 'action_start':
+                        debugLog(`[RECV] action_start: ${data.actionType}`);
+                        if (gameState && gameState.mechas[oppNum]) {
+                            const opp = gameState.mechas[oppNum];
+                            const config = MOVES[data.actionType];
+                            opp.attackType = data.actionType;
+                            opp.state = 'attackWindup';
+                            opp.attackWindup = config ? config.windup : 30;
+                            opp.attackActive = config && config.type !== 'projectile' ? config.active : 0;
+                            opp.attackRecovery = config ? config.recovery : 0;
+                            opp.facingRight = data.facingRight;
                         }
-                    }
-                    break;
+                        break;
 
-                case 'game_over':
-                    debugLog(`收到游戏结束信号，赢家: ${data.winner}`);
-                    gameState.winner = data.winner === 1 ? 'player1' : 'player2';
-                    gameState.gameStatus = 'gameOver';
-                    showGameOver();
-                    break;
+                    case 'defense_update':
+                        debugLog(`[RECV] defense_update: ${data.isDefending}`);
+                        if (gameState && gameState.mechas[oppNum]) {
+                            gameState.mechas[oppNum].isDefending = data.isDefending;
+                        }
+                        break;
+
+                    case 'projectile_create':
+                        debugLog(`[RECV] projectile_create: ${data.projectileType}`);
+                        const projCfg = MOVES[data.projectileType] || { size: 20, damage: 10, knockback: 30 };
+                        const projSuper = !!data.isSuper;
+                        fireballs.push({ 
+                            x: data.x, 
+                            y: data.y, 
+                            vx: data.vx, 
+                            owner: oppNum,
+                            size: projSuper ? projCfg.size * 2 : projCfg.size,
+                            damage: projSuper ? projCfg.damage * 4 : projCfg.damage,
+                            knockback: projCfg.knockback,
+                            isSuper: projSuper
+                        });
+                        break;
+
+                    case 'game_over':
+                        debugLog(`收到游戏结束信号，赢家: ${data.winner}`);
+                        gameState.winner = data.winner === 1 ? 'player1' : 'player2';
+                        gameState.gameStatus = 'gameOver';
+                        // 同步最终血量（气值各自本地控制）
+                        if (data.p1Health !== undefined) gameState.mechas.player1.health = data.p1Health;
+                        if (data.p2Health !== undefined) gameState.mechas.player2.health = data.p2Health;
+                        updateHealthUI();
+                        updateQiUI();
+                        syncLogEntry('game_over', `winner=${data.winner}`);
+                        showGameOver();
+                        break;
+                        
+                    case 'action_hit':
+                        debugLog(`[RECV] action_hit: ${data.actionType} -> ${data.target}`);
+                        if (gameState) {
+                            const hitTarget = gameState.mechas[data.target];
+                            if (hitTarget) {
+                                const attackerNum = myPlayerId === 1 ? 'player1' : 'player2';
+                                const attacker = gameState.mechas[attackerNum];
+                                const hitChar = getChar(hitTarget.characterId);
+                                
+                                // 直接使用同步来的血量值
+                                if (data.myHealth !== undefined && attacker) {
+                                    attacker.health = data.myHealth;
+                                }
+                                if (data.oppHealth !== undefined) {
+                                    hitTarget.health = data.oppHealth;
+                                }
+                                
+                                hitTarget.state = 'hit';
+                                hitTarget.hitStun = hitChar.hitStun;
+                                hitTarget.flashTimer = 48;
+                                hitTarget.knockbackVelX = data.facingRight ? (MOVES[data.actionType]?.knockback || 30) : -(MOVES[data.actionType]?.knockback || 30);
+                                triggerScreenShake((MOVES[data.actionType]?.damage || 10) * 0.3);
+                                playHitSound();
+                                updateHealthUI();
+                                
+                                syncLogEntry('hit_rcv', `${data.actionType}->${data.target}`);
+                                
+                                if (hitTarget.health <= 0) {
+                                    gameState.winner = data.target;
+                                    gameState.gameStatus = 'gameOver';
+                                    showGameOver();
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'rematch_request':
+                        rematchState.oppReady = true;
+                        if (rematchState.myReady) {
+                            const rBtn = document.getElementById('rematchBtn');
+                            rBtn.textContent = '双方已确认，开始...';
+                            rBtn.disabled = true;
+                        } else {
+                            const rBtn = document.getElementById('rematchBtn');
+                            rBtn.textContent = '对手请求再战！点击接受';
+                            rBtn.disabled = false;
+                            rBtn.onclick = acceptRematch;
+                        }
+                        break;
+
+                    case 'rematch_accept':
+                        rematchState.oppReady = true;
+                        if (rematchState.myReady) {
+                            const rBtn = document.getElementById('rematchBtn');
+                            rBtn.textContent = '双方已确认，开始...';
+                            rBtn.disabled = true;
+                            startOnlineRematch();
+                        }
+                        break;
+                }
             }
         }
 
@@ -1526,7 +1731,12 @@
             connection.send(data);
             messageCount.sent++;
             lastMessageTime = Date.now();
-            logSync('SEND', data.type, data);
+            
+            // 关键数据类型发送时记录日志
+            if (data.type === 'state_update' || data.type === 'action_hit' || 
+                data.type === 'game_over' || data.type === 'game_state_sync') {
+                syncLogEntry('send_' + data.type, '');
+            }
         }
 
         function playSound(frequency, duration, type = 'square', volume = 0.1) {
@@ -1561,6 +1771,7 @@
         function playTitleMusic() {
             if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
             if (isMuted) return;
+            stopAllMusic();
             musicPlaying = true; gameMusicPlaying = false; melodyIndex = 0;
             function play() {
                 if (!musicPlaying || isMuted) return;
@@ -1575,6 +1786,7 @@
         function playBattleMusic() {
             if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
             if (isMuted) return;
+            stopAllMusic();
             musicPlaying = false; gameMusicPlaying = true; melodyIndex = 0;
             function play() {
                 if (!gameMusicPlaying || isMuted) return;
@@ -1595,13 +1807,33 @@
             play();
         }
 
-        function stopAllMusic() { musicPlaying = false; gameMusicPlaying = false; }
+        function playGameOverMusic() {
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (isMuted) return;
+            stopAllMusic();
+            gameOverMusicPlaying = true; melodyIndex = 0;
+            function play() {
+                if (!gameOverMusicPlaying || isMuted) return;
+                const note = gameOverMelody[melodyIndex];
+                playSound(note.freq, note.dur * 0.8, 'square', 0.06);
+                melodyIndex++;
+                if (melodyIndex < gameOverMelody.length) {
+                    setTimeout(play, note.dur * 1000);
+                } else {
+                    gameOverMusicPlaying = false;
+                }
+            }
+            play();
+        }
+
+        function stopAllMusic() { musicPlaying = false; gameMusicPlaying = false; gameOverMusicPlaying = false; }
 
         function toggleMute() {
             isMuted = !isMuted;
             document.getElementById('muteBtn').textContent = isMuted ? '🔇' : '🔊';
             document.getElementById('muteBtn').classList.toggle('muted', isMuted);
             if (isMuted) stopAllMusic();
+            else if (gameState && gameState.gameStatus === 'gameOver') playGameOverMusic();
             else if (gameState && gameState.gameStatus === 'playing') playBattleMusic();
             else playTitleMusic();
         }
@@ -1613,14 +1845,24 @@
             const c2 = getChar(c2Id);
             gameState = {
                 mechas: {
-                    player1: { x: 100, y: GROUND_Y, health: c1.maxHealth, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackCooldown: 0, hitStun: 0, facingRight: true, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c1.id },
-                    player2: { x: 550, y: GROUND_Y, health: c2.maxHealth, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackCooldown: 0, hitStun: 0, facingRight: false, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c2.id }
+                    player1: { x: 100, y: GROUND_Y, health: c1.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: true, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c1.id, isCharging: false },
+                    player2: { x: 550, y: GROUND_Y, health: c2.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: false, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c2.id, isCharging: false }
                 },
                 gameStatus: 'playing',
                 winner: null
             };
             fireballs = [];
+            particles = [];
             screenShake = { x: 0, y: 0, intensity: 0 };
+            lastQiValue = 0;
+            lastQiSendTime = 0;
+            lastQiSent = 0;
+            lastHealthValue = { player1: -1, player2: -1 };
+            lastHealthSendTime = 0;
+            lastLogP1Health = -1;
+            lastLogP2Health = -1;
+            lastLogP1Qi = -1;
+            lastLogP2Qi = -1;
         }
 
         function restartGame() {
@@ -1632,11 +1874,12 @@
             const c2Id = gameState.mechas.player2.characterId;
             const c1 = getChar(c1Id);
             const c2 = getChar(c2Id);
-            gameState.mechas.player1 = { x: 100, y: GROUND_Y, health: c1.maxHealth, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackCooldown: 0, hitStun: 0, facingRight: true, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c1.id };
-            gameState.mechas.player2 = { x: 550, y: GROUND_Y, health: c2.maxHealth, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackCooldown: 0, hitStun: 0, facingRight: false, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c2.id };
+            gameState.mechas.player1 = { x: 100, y: GROUND_Y, health: c1.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: true, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c1.id, isCharging: false };
+            gameState.mechas.player2 = { x: 550, y: GROUND_Y, health: c2.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: false, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c2.id, isCharging: false };
             gameState.gameStatus = 'playing';
             gameState.winner = null;
             fireballs = [];
+            particles = [];
             opponentData = null;
             opponentDisplayX = 550;
             opponentDisplayY = GROUND_Y;
@@ -1644,6 +1887,54 @@
             opponentTargetY = GROUND_Y;
             document.getElementById('gameOver').classList.remove('show');
             updateHealthUI();
+            updateQiUI();
+            lastQiValue = 0;
+            lastQiSendTime = 0;
+            lastQiSent = 0;
+            lastHealthValue = { player1: -1, player2: -1 };
+            lastHealthSendTime = 0;
+            lastLogP1Health = -1;
+            lastLogP2Health = -1;
+            lastLogP1Qi = -1;
+            lastLogP2Qi = -1;
+            playBattleMusic();
+        }
+
+        function handleRematch() {
+            if (gameMode === 'online') {
+                rematchState.myReady = true;
+                sendData({ type: 'rematch_request' });
+                const btn = document.getElementById('rematchBtn');
+                btn.textContent = '等待对手确认...';
+                btn.disabled = true;
+            } else {
+                restartGame();
+            }
+        }
+
+        function acceptRematch() {
+            rematchState.myReady = true;
+            sendData({ type: 'rematch_accept' });
+            const btn = document.getElementById('rematchBtn');
+            btn.textContent = '已确认，等待开始...';
+            btn.disabled = true;
+            if (isHost) startOnlineRematch();
+        }
+
+        function startOnlineRematch() {
+            initGameState();
+            showGame();
+            restartGame();
+            isGameActive = true;
+            showGame();
+            sendData({
+                type: 'game_state_sync',
+                playerId: myPlayerId,
+                player1Char: DEFAULT_CHAR_SELECTION.player1,
+                player2Char: DEFAULT_CHAR_SELECTION.player2,
+                isStart: true
+            });
+            rematchState = { myReady: false, oppReady: false };
         }
 
         function triggerScreenShake(intensity) { screenShake.intensity = Math.max(screenShake.intensity, intensity * 2); }
@@ -1657,7 +1948,7 @@
             }
         }
 
-        function drawPixelMecha(x, y, charConfig, state, attackType, facingRight, isDefending, isJumping, flashTimer) {
+        function drawPixelMecha(x, y, charConfig, state, attackType, facingRight, isDefending, isJumping, flashTimer, windupRemaining, recoveryRemaining) {
             const size = charConfig.size;
             const bodyColor = charConfig.bodyColor;
             const detailColor = charConfig.detailColor;
@@ -1667,11 +1958,21 @@
             const highlight = charConfig.defendHighlight;
             let color = bodyColor;
 
+            const isWindup = state === 'attackWindup';
+            const isActive = state === 'attack';
+            const isRecovery = state === 'attackRecovery';
+            const isAttacking = isWindup || isActive || isRecovery;
+            const isKicking = isAttacking && attackType === 'kick';
+
             ctx.save();
             ctx.translate(x + size/2, y + size/2);
             if (!facingRight) ctx.scale(-1, 1);
-            const isKicking = (state === 'attack' || state === 'attackWindup') && attackType === 'kick';
+
+            if (isWindup) ctx.translate(-4 + Math.sin(Date.now() / 80) * 1, 0);
+            if (isRecovery) ctx.translate(2 + Math.sin(Date.now() / 60) * 0.5, 0);
+
             if (flashTimer > 0 && (flashTimer % 6 < 2 || flashTimer % 6 >= 4)) color = '#ffffff';
+            if (isWindup) { const b = Math.min(255, parseInt(bodyColor.slice(1,3), 16) + 30); color = '#' + b.toString(16).padStart(2,'0') + bodyColor.slice(3); }
 
             ctx.fillStyle = '#333'; ctx.fillRect(-35, -50, 70, 85);
             ctx.fillStyle = color; ctx.fillRect(-30, -50, 60, 80);
@@ -1683,16 +1984,32 @@
             ctx.fillStyle = color; ctx.fillRect(-32, -28, 8, 25); ctx.fillRect(24, -28, 8, 25);
             ctx.fillStyle = detailColor; ctx.fillRect(-30, -3, 6, 20); ctx.fillRect(24, -3, 6, 20);
 
-            if (state === 'attack' || state === 'attackWindup') {
-                const ap = state === 'attack' ? 1 : 0.5;
+            if (isAttacking) {
+                let limbExt = 0, limbLen = 0;
+                if (isWindup) {
+                    const cfg = MOVES[attackType];
+                    const ratio = cfg ? (cfg.windup - windupRemaining) / cfg.windup : 0;
+                    limbExt = -8 - ratio * 4;
+                    limbLen = 8 + ratio * 12;
+                } else if (isActive) {
+                    limbExt = 0;
+                    limbLen = attackType === 'punch' ? 50 : 60;
+                } else if (isRecovery) {
+                    const cfg = MOVES[attackType];
+                    if (cfg && cfg.recovery > 0) {
+                        const ratio = recoveryRemaining / cfg.recovery;
+                        limbExt = 0;
+                        limbLen = (attackType === 'punch' ? 50 : 60) * (1 - ratio);
+                    } else {
+                        limbLen = 0;
+                    }
+                }
                 if (attackType === 'punch') {
-                    const pe = state === 'attack' ? 50 : 20;
-                    ctx.fillStyle = color; ctx.fillRect(32, -25, 12 + pe * ap, 12);
-                    ctx.fillStyle = detailColor; ctx.fillRect(40 + pe * ap, -22, 10, 6);
+                    ctx.fillStyle = color; ctx.fillRect(32 + limbExt, -25, 12 + limbLen, 12);
+                    ctx.fillStyle = detailColor; ctx.fillRect(40 + limbExt + limbLen, -22, 10, 6);
                 } else if (attackType === 'kick') {
-                    const ke = state === 'attack' ? 60 : 25;
-                    ctx.fillStyle = color; ctx.fillRect(32, 27, 12 + ke * ap, 12);
-                    ctx.fillStyle = detailColor; ctx.fillRect(40 + ke * ap, 30, 10, 6);
+                    ctx.fillStyle = color; ctx.fillRect(32 + limbExt, 27, 12 + limbLen, 12);
+                    ctx.fillStyle = detailColor; ctx.fillRect(40 + limbExt + limbLen, 30, 10, 6);
                 }
             } else { ctx.fillStyle = color; ctx.fillRect(32, -25, 12, 12); }
 
@@ -1713,14 +2030,66 @@
             ctx.restore();
         }
 
-        function drawFireball(x, y, size = 20) {
-            const pulse = Math.sin(Date.now() / 50) * 2, ballSize = size + pulse;
-            ctx.beginPath(); ctx.arc(x, y, ballSize, 0, Math.PI * 2);
-            const g = ctx.createRadialGradient(x, y, 0, x, y, ballSize);
-            g.addColorStop(0, '#ffffff'); g.addColorStop(0.3, '#ffff00'); g.addColorStop(0.6, '#ff8800'); g.addColorStop(1, '#ff4400');
-            ctx.fillStyle = g; ctx.fill();
-            ctx.beginPath(); ctx.arc(x, y, ballSize * 1.3, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 100, 0, ${0.3 + pulse * 0.05})`; ctx.fill();
+        function drawFireball(f) {
+            const pulse = Math.sin(Date.now() / 50) * 2, ballSize = (f.size || 20) + pulse;
+            if (f.isSuper) {
+                ctx.beginPath(); ctx.arc(f.x, f.y, ballSize, 0, Math.PI * 2);
+                const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, ballSize);
+                g.addColorStop(0, '#ffffff'); g.addColorStop(0.2, '#88ddff'); g.addColorStop(0.5, '#0088ff'); g.addColorStop(1, '#0044aa');
+                ctx.fillStyle = g; ctx.fill();
+                ctx.beginPath(); ctx.arc(f.x, f.y, ballSize * 1.4, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 150, 255, ${0.25 + pulse * 0.04})`; ctx.fill();
+                ctx.beginPath(); ctx.arc(f.x, f.y, ballSize * 1.1, 0, Math.PI * 2);
+                ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 3; ctx.stroke();
+            } else {
+                ctx.beginPath(); ctx.arc(f.x, f.y, ballSize, 0, Math.PI * 2);
+                const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, ballSize);
+                g.addColorStop(0, '#ffffff'); g.addColorStop(0.3, '#ffff00'); g.addColorStop(0.6, '#ff8800'); g.addColorStop(1, '#ff4400');
+                ctx.fillStyle = g; ctx.fill();
+                ctx.beginPath(); ctx.arc(f.x, f.y, ballSize * 1.3, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 100, 0, ${0.3 + pulse * 0.05})`; ctx.fill();
+            }
+        }
+
+        function drawChargingAura(x, y, size, qi) {
+            const time = Date.now();
+            const pulseScale = 1 + Math.sin(time / 80) * 0.18;
+            const glowPulse = 0.4 + Math.sin(time / 100) * 0.25;
+            const qiRatio = qi / 100;
+            
+            const baseRadius = size * 0.8;
+            const radius = baseRadius * pulseScale;
+            
+            const gradient = ctx.createRadialGradient(x, y, baseRadius * 0.4, x, y, radius);
+            gradient.addColorStop(0, `rgba(255, 255, ${200 + qiRatio * 55}, 0)`);
+            gradient.addColorStop(0.4, `rgba(255, ${230 + qiRatio * 25}, ${100 + qiRatio * 155}, ${0.35 * glowPulse})`);
+            gradient.addColorStop(0.7, `rgba(255, 255, ${150 + qiRatio * 105}, ${0.5 * glowPulse})`);
+            gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+            
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(x, y, radius * 1.25, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 255, ${180 + qiRatio * 75}, ${0.4 * glowPulse})`;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2 + time / 350;
+                const spikeLength = 12 + Math.sin(time / 70 + i) * 6;
+                const innerRadius = radius * 0.75;
+                const outerRadius = radius + spikeLength;
+                
+                ctx.beginPath();
+                ctx.moveTo(x + Math.cos(angle) * innerRadius, y + Math.sin(angle) * innerRadius);
+                ctx.lineTo(x + Math.cos(angle) * outerRadius, y + Math.sin(angle) * outerRadius);
+                ctx.strokeStyle = `rgba(255, 255, ${200 + qiRatio * 55}, ${0.5 * glowPulse})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
         }
 
         function drawBackground() {
@@ -1789,10 +2158,26 @@
                 const c1 = getChar(p1.characterId);
                 const c2 = getChar(p2.characterId);
 
-                drawPixelMecha(p1.x, p1.y, c1, p1.state, p1.attackType, p1.facingRight, p1.isDefending, p1.isJumping, p1.flashTimer);
-                drawPixelMecha(p2.x, p2.y, c2, p2.state, p2.attackType, p2.facingRight, p2.isDefending, p2.isJumping, p2.flashTimer);
-                fireballs.forEach(f => drawFireball(f.x, f.y));
+                if (p1.isCharging) drawChargingAura(p1.x + c1.size/2, p1.y + c1.size/2, c1.size, p1.qi);
+                if (p2.isCharging) drawChargingAura(p2.x + c2.size/2, p2.y + c2.size/2, c2.size, p2.qi);
+                
+                drawPixelMecha(p1.x, p1.y, c1, p1.state, p1.attackType, p1.facingRight, p1.isDefending, p1.isJumping, p1.flashTimer, p1.attackWindup, p1.attackRecovery);
+                drawPixelMecha(p2.x, p2.y, c2, p2.state, p2.attackType, p2.facingRight, p2.isDefending, p2.isJumping, p2.flashTimer, p2.attackWindup, p2.attackRecovery);
+                fireballs.forEach(f => drawFireball(f));
+                particles.forEach(p => {
+                    ctx.globalAlpha = p.life / p.maxLife;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+                });
+                ctx.globalAlpha = 1;
                 ctx.fillStyle = '#fff'; ctx.font = '12px "Press Start 2P"'; ctx.fillText('VS', CANVAS_WIDTH/2 - 15, 30);
+                
+                ctx.fillStyle = '#00ffff'; ctx.font = '8px "Press Start 2P"';
+                ctx.fillText(`P1: ${p1.state} | ${p1.attackType || '-'}`, 10, CANVAS_HEIGHT - 50);
+                ctx.fillText(`    W:${p1.attackWindup} A:${p1.attackActive} R:${p1.attackRecovery}`, 10, CANVAS_HEIGHT - 38);
+                ctx.fillStyle = '#ff4444';
+                ctx.fillText(`P2: ${p2.state} | ${p2.attackType || '-'}`, CANVAS_WIDTH - 180, CANVAS_HEIGHT - 50);
+                ctx.fillText(`    W:${p2.attackWindup} A:${p2.attackActive} R:${p2.attackRecovery}`, CANVAS_WIDTH - 180, CANVAS_HEIGHT - 38);
                 
                 if (gameMode === 'online') {
                     document.getElementById('networkStats').style.display = 'block';
@@ -1800,7 +2185,7 @@
                     document.getElementById('recvCount').textContent = messageCount.received;
                     
                     document.getElementById('syncLogPanel').style.display = 'block';
-                    document.getElementById('syncLogContent').textContent = getSyncTableHTML();
+                    document.getElementById('syncLogContent').textContent = syncLog.slice(-30).join('\n');
                     
                     const myCharName = getChar(gameState.mechas[myPlayerId === 1 ? 'player1' : 'player2'].characterId).name;
                     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -1836,14 +2221,33 @@
         }
 
         function stepPlayerMove(my, myChar, kb) {
-            if (my.hitStun === 0 && my.attackWindup === 0 && my.attackCooldown === 0) {
+            if (my.hitStun === 0 && my.attackWindup === 0 && my.attackActive === 0 && my.attackRecovery === 0 && !my.isCharging) {
                 if (keys[kb.left]) { my.x = Math.max(0, my.x - myChar.moveSpeed); my.facingRight = false; }
                 if (keys[kb.right]) { my.x = Math.min(CANVAS_WIDTH - myChar.size, my.x + myChar.moveSpeed); my.facingRight = true; }
                 if (myChar.hasBlock) my.isDefending = keys[kb.block];
             }
-            if (my.hitStun === 0 && keys[kb.jump] && !my.isJumping) { my.velocityY = -myChar.jumpForce; my.isJumping = true; playJumpSound(); }
+            if (my.hitStun === 0 && keys[kb.jump] && !my.isJumping && !my.isCharging) { my.velocityY = -myChar.jumpForce; my.isJumping = true; playJumpSound(); }
             my.velocityY += GRAVITY; my.y += my.velocityY;
             if (my.y >= GROUND_Y) { my.y = GROUND_Y; my.velocityY = 0; my.isJumping = false; }
+        }
+
+        function stepPlayerChargeQi(my, myChar, kb) {
+            const QI_KEY = 'KeyS';
+            if (my.hitStun > 0 || my.attackWindup > 0 || my.attackActive > 0 || my.attackRecovery > 0) {
+                my.isCharging = false;
+                return;
+            }
+            if (keys[QI_KEY] && my.qi < 100) {
+                const moving = keys[kb.left] || keys[kb.right] || keys[kb.jump];
+                if (!moving) {
+                    my.isCharging = true;
+                    my.qi = Math.min(100, my.qi + 20/60);
+                } else {
+                    my.isCharging = false;
+                }
+            } else {
+                my.isCharging = false;
+            }
         }
 
         function stepPlayerAttack(my, myChar, kb) {
@@ -1854,7 +2258,8 @@
                 if (!moveKey) continue;
                 const moveCfg = MOVES[moveId];
                 if (!moveCfg) continue;
-                if (keys[moveKey] && my.hitStun === 0 && my.attackCooldown === 0 && my.attackWindup === 0) {
+                if (moveCfg.type === 'projectile' && my.qi < 25 && my.qi < 100) continue;
+                if (keys[moveKey] && !prevKeys[moveKey] && my.hitStun === 0 && my.attackWindup === 0 && my.attackActive === 0 && my.attackRecovery === 0) {
                     my.attackWindup = moveCfg.windup;
                     my.attackType = moveId;
                     my.isDefending = false;
@@ -1865,19 +2270,24 @@
 
         function stepMeleeAnimate(my, moveCfg) {
             my.state = 'attack';
-            my.attackCooldown = moveCfg.cooldown;
+            my.attackActive = moveCfg.active;
             playAttackSound();
         }
 
         function applyMeleeHit(my, opp, myNum, oppChar, moveCfg) {
             let d = moveCfg.damage;
+            if (opp.isCharging) d = Math.floor(d * 1.5);
             if (opp.isDefending) d = Math.floor(d * oppChar.defenseReduction);
             opp.health = Math.max(0, opp.health - d);
             opp.state = 'hit'; opp.hitStun = oppChar.hitStun; opp.flashTimer = 48;
             opp.knockbackVelX = my.facingRight ? moveCfg.knockback : -moveCfg.knockback;
             triggerScreenShake(moveCfg.knockback * 0.3);
+            const hitX = opp.x + oppChar.size/2;
+            const hitY = opp.y + oppChar.size/2;
+            spawnImpactParticles(hitX, hitY, 8 + moveCfg.damage * 2);
             myNum === 'player1' ? playHitSound() : playHitSound2();
             updateHealthUI();
+            syncLogEntry('hit_local', `${myNum} hits`);
             if (opp.health <= 0) {
                 gameState.winner = myNum;
                 gameState.gameStatus = 'gameOver';
@@ -1885,11 +2295,13 @@
             }
         }
 
-        function stepProjectileExecute(my, myNum, myChar, moveCfg) {
+        function stepProjectileExecute(my, myNum, myChar, moveCfg, isSuper) {
             const fbX = my.x + myChar.size/2 + (my.facingRight ? 40 : -40);
             const fbY = my.y + myChar.size/2 - 20;
             const fbVx = my.facingRight ? moveCfg.speed : -moveCfg.speed;
-            fireballs.push({ x: fbX, y: fbY, vx: fbVx, owner: myNum, size: moveCfg.size, damage: moveCfg.damage, knockback: moveCfg.knockback });
+            const size = isSuper ? moveCfg.size * 2 : moveCfg.size;
+            const damage = isSuper ? moveCfg.damage * 4 : moveCfg.damage;
+            fireballs.push({ x: fbX, y: fbY, vx: fbVx, owner: myNum, size, damage, knockback: moveCfg.knockback, isSuper: !!isSuper });
             playFireballSound();
         }
 
@@ -1898,11 +2310,15 @@
             const p1 = gameState.mechas.player1, p2 = gameState.mechas.player2;
             const c1 = getChar(p1.characterId), c2 = getChar(p2.characterId);
 
-            p1.state = p1.state === 'hit' ? 'hit' : 'idle';
-            p2.state = p2.state === 'hit' ? 'hit' : 'idle';
+            const attackStates = ['attackWindup', 'attack', 'attackRecovery'];
+            p1.state = (p1.state === 'hit' || attackStates.includes(p1.state)) ? p1.state : 'idle';
+            p2.state = (p2.state === 'hit' || attackStates.includes(p2.state)) ? p2.state : 'idle';
 
             if (p1.flashTimer > 0) p1.flashTimer--;
             if (p2.flashTimer > 0) p2.flashTimer--;
+
+            particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--; });
+            particles = particles.filter(p => p.life > 0);
 
             fireballs.forEach((f, i) => {
                 f.x += f.vx;
@@ -1915,28 +2331,83 @@
                 const hitDistance = ballSize + 40;
                 
                 if (Math.sqrt(dx*dx + dy*dy) < hitDistance) {
-                    const isLocalFireball = gameMode !== 'online' || (myPlayerId === 1 && f.owner === 'player1') || (myPlayerId === 2 && f.owner === 'player2');
+                    // 在联机模式下，只有主机才执行伤害判定！客机只负责同步状态和显示！
+                    const isHostDoingDamage = gameMode !== 'online' || isHost;
                     
-                    if (isLocalFireball) {
+                    if (isHostDoingDamage) {
                         if (!def.isDefending) {
-                            const dmg = f.damage || 10;
+                            let dmg = f.damage || 10;
+                            if (def.isCharging) dmg = Math.floor(dmg * 1.5);
                             def.health = Math.max(0, def.health - dmg);
                             def.state = 'hit'; def.hitStun = defChar.hitStun; def.flashTimer = 48;
                             const knockback = f.knockback || 30;
                             def.knockbackVelX = f.vx > 0 ? knockback : -knockback;
                             triggerScreenShake(knockback * 0.4);
+                            spawnImpactParticles(f.x, f.y, 10);
                             f.owner === 'player1' ? playHitSound() : playHitSound2();
                             updateHealthUI();
                             
                             if (gameMode === 'online') {
                                 const targetNum = f.owner === 'player1' ? 'player2' : 'player1';
-                                sendData({ type: 'action_hit', actionType: 'fireball', target: targetNum, facingRight: f.vx > 0 });
+                                const attackerNum = f.owner === 'player1' ? 'player1' : 'player2';
+                                sendData({ 
+                                    type: 'action_hit', 
+                                    actionType: 'fireball', 
+                                    target: targetNum, 
+                                    facingRight: f.vx > 0,
+                                    myHealth: gameState.mechas[attackerNum].health,
+                                    oppHealth: def.health
+                                });
                             }
                             
                             if (def.health <= 0) {
                                 gameState.winner = f.owner;
                                 gameState.gameStatus = 'gameOver';
-                                if (gameMode === 'online') sendData({ type: 'game_over', winner: f.owner === 'player1' ? 1 : 2 });
+                                if (gameMode === 'online') {
+                                    sendData({ 
+                                        type: 'game_over', 
+                                        winner: f.owner === 'player1' ? 1 : 2,
+                                        p1Health: gameState.mechas.player1.health,
+                                        p2Health: gameState.mechas.player2.health
+                                    });
+                                }
+                                showGameOver();
+                            }
+                        } else if (f.isSuper) {
+                            const dmg = Math.floor((f.damage || 10) * 0.5);
+                            def.health = Math.max(0, def.health - dmg);
+                            def.state = 'hit'; def.hitStun = defChar.hitStun; def.flashTimer = 48;
+                            const knockback = f.knockback || 30;
+                            def.knockbackVelX = f.vx > 0 ? knockback : -knockback;
+                            triggerScreenShake(knockback * 0.4);
+                            spawnImpactParticles(f.x, f.y, 10);
+                            f.owner === 'player1' ? playHitSound() : playHitSound2();
+                            updateHealthUI();
+                            
+                            if (gameMode === 'online') {
+                                const targetNum = f.owner === 'player1' ? 'player2' : 'player1';
+                                const attackerNum = f.owner === 'player1' ? 'player1' : 'player2';
+                                sendData({ 
+                                    type: 'action_hit', 
+                                    actionType: 'fireball', 
+                                    target: targetNum, 
+                                    facingRight: f.vx > 0,
+                                    myHealth: gameState.mechas[attackerNum].health,
+                                    oppHealth: def.health
+                                });
+                            }
+                            
+                            if (def.health <= 0) {
+                                gameState.winner = f.owner;
+                                gameState.gameStatus = 'gameOver';
+                                if (gameMode === 'online') {
+                                    sendData({ 
+                                        type: 'game_over', 
+                                        winner: f.owner === 'player1' ? 1 : 2,
+                                        p1Health: gameState.mechas.player1.health,
+                                        p2Health: gameState.mechas.player2.health
+                                    });
+                                }
                                 showGameOver();
                             }
                         }
@@ -1954,11 +2425,39 @@
             if (p1.hitStun > 0) { p1.hitStun--; p1.state = 'hit'; }
             if (p2.hitStun > 0) { p2.hitStun--; p2.state = 'hit'; }
 
-            if (p1.attackWindup > 0) { p1.attackWindup--; p1.state = p1.hitStun > 0 ? 'hit' : 'attackWindup'; }
-            if (p2.attackWindup > 0) { p2.attackWindup--; p2.state = p2.hitStun > 0 ? 'hit' : 'attackWindup'; }
-
-            if (p1.attackCooldown > 0) p1.attackCooldown--;
-            if (p2.attackCooldown > 0) p2.attackCooldown--;
+            if (p1.attackWindup > 0) { 
+                p1.attackWindup--; 
+                p1.state = p1.hitStun > 0 ? 'hit' : 'attackWindup'; 
+            } else if (p1.attackActive > 0) { 
+                p1.attackActive--; 
+                p1.state = p1.hitStun > 0 ? 'hit' : 'attack'; 
+            } else if (p1.attackRecovery > 0) { 
+                p1.attackRecovery--; 
+                if (p1.attackRecovery === 0) {
+                    p1.state = p1.hitStun > 0 ? 'hit' : 'idle';
+                } else {
+                    p1.state = p1.hitStun > 0 ? 'hit' : 'attackRecovery';
+                } 
+            }
+            
+            if (p2.attackWindup > 0) { 
+                p2.attackWindup--; 
+                p2.state = p2.hitStun > 0 ? 'hit' : 'attackWindup'; 
+            } else if (p2.attackActive > 0) { 
+                p2.attackActive--; 
+                if (p2.attackActive === 0) {
+                    p2.state = p2.hitStun > 0 ? 'hit' : 'idle';
+                } else {
+                    p2.state = p2.hitStun > 0 ? 'hit' : 'attack';
+                }
+            } else if (p2.attackRecovery > 0) { 
+                p2.attackRecovery--; 
+                if (p2.attackRecovery === 0) {
+                    p2.state = p2.hitStun > 0 ? 'hit' : 'idle';
+                } else {
+                    p2.state = p2.hitStun > 0 ? 'hit' : 'attackRecovery';
+                }
+            }
 
             if (gameMode === 'online') {
                 const myNum = myPlayerId === 1 ? 'player1' : 'player2';
@@ -1969,47 +2468,194 @@
                 const oppChar = getChar(opp.characterId);
                 const kb = ONLINE_CONTROLS;
 
-                const prevDefending = my.isDefending;
-                stepPlayerMove(my, myChar, kb);
-                stepPlayerAttack(my, myChar, kb);
+                if (isHost) {
+                    // ========== 主机逻辑 ==========
+                    const prevDefending = my.isDefending;
+                    stepPlayerMove(my, myChar, kb);
+                    stepPlayerAttack(my, myChar, kb);
+                    stepPlayerChargeQi(my, myChar, kb);
 
-                if (myChar.hasBlock && my.isDefending !== prevDefending) {
-                    sendData({ type: 'defense_update', isDefending: my.isDefending });
-                }
 
-                if (my.attackWindup === 1 && my.hitStun === 0) {
-                    const moveCfg = MOVES[my.attackType];
-                    if (moveCfg) {
-                        if (moveCfg.type === 'projectile') {
-                            my.attackCooldown = moveCfg.cooldown;
-                            stepProjectileExecute(my, myNum, myChar, moveCfg);
-                            sendData({ type: 'projectile_create', projectileType: my.attackType, x: my.x + myChar.size/2 + (my.facingRight ? 40 : -40), y: my.y + myChar.size/2 - 20, vx: my.facingRight ? moveCfg.speed : -moveCfg.speed });
-                        } else {
-                            const moveCfg = MOVES[my.attackType];
-                            if (!skipAttackHit && moveCfg && checkHitboxCollision(my, opp, my.attackType, moveCfg.range, myChar.size)) {
-                                stepMeleeAnimate(my, moveCfg);
-                                applyMeleeHit(my, opp, myNum, oppChar, moveCfg);
-                                sendData({ type: 'action_hit', actionType: my.attackType, target: oppNum, facingRight: my.facingRight });
-                                if (opp.health <= 0) sendData({ type: 'game_over', winner: myPlayerId });
+
+                    if (my.attackWindup === 1 && my.hitStun === 0) {
+                        const moveCfg = MOVES[my.attackType];
+                        if (moveCfg) {
+                            if (moveCfg.type === 'projectile') {
+                                my.attackRecovery = moveCfg.recovery;
+                                const isSuper = my.qi >= 100;
+                                if (isSuper) {
+                                    my.qi = 0;
+                                } else if (my.qi >= 25) {
+                                    my.qi = Math.max(0, my.qi - 25);
+                                } else {
+                                    // 气不够，取消攻击
+                                    my.attackWindup = 0;
+                                    my.attackType = null;
+                                    return;
+                                }
+                                stepProjectileExecute(my, myNum, myChar, moveCfg, isSuper);
+                                sendData({ type: 'projectile_create', projectileType: my.attackType, isSuper: !!isSuper, x: my.x + myChar.size/2 + (my.facingRight ? 40 : -40), y: my.y + myChar.size/2 - 20, vx: my.facingRight ? moveCfg.speed : -moveCfg.speed });
                             } else {
-                                stepMeleeAnimate(my, moveCfg);
+                                if (!skipAttackHit && moveCfg && checkHitboxCollision(my, opp, my.attackType, moveCfg.range, myChar.size)) {
+                                    stepMeleeAnimate(my, moveCfg);
+                                    applyMeleeHit(my, opp, myNum, oppChar, moveCfg);
+                                    sendData({ 
+                                        type: 'action_hit', 
+                                        actionType: my.attackType, 
+                                        target: oppNum, 
+                                        facingRight: my.facingRight,
+                                        myHealth: my.health,
+                                        oppHealth: opp.health
+                                    });
+                                    if (opp.health <= 0) {
+                                        sendData({ 
+                                            type: 'game_over', 
+                                            winner: myPlayerId,
+                                            p1Health: gameState.mechas.player1.health,
+                                            p2Health: gameState.mechas.player2.health
+                                        });
+                                    }
+                                } else {
+                                    stepMeleeAnimate(my, moveCfg);
+                                }
+                                my.attackRecovery = moveCfg.recovery;
+                            }
+                        }
+                        if (my.attackType !== 'fireball') {
+                            sendData({ type: 'action_start', actionType: my.attackType, facingRight: my.facingRight });
+                        }
+                    }
+
+                    // 主机处理客机（player2）的攻击伤害判定
+                    if (opp.attackWindup === 1 && opp.hitStun === 0) {
+                        const oppMoveCfg = MOVES[opp.attackType];
+                        if (oppMoveCfg) {
+                            if (oppMoveCfg.type === 'projectile') {
+                                opp.attackRecovery = oppMoveCfg.recovery;
+                                const oppIsSuper = opp.qi >= 100;
+                                if (oppIsSuper) {
+                                    opp.qi = 0;
+                                } else if (opp.qi >= 25) {
+                                    opp.qi = Math.max(0, opp.qi - 25);
+                                } else {
+                                    opp.attackWindup = 0;
+                                    opp.attackType = null;
+                                }
+                                stepProjectileExecute(opp, oppNum, oppChar, oppMoveCfg, oppIsSuper);
+                            } else {
+                                if (!skipAttackHit && oppMoveCfg && checkHitboxCollision(opp, my, opp.attackType, oppMoveCfg.range, oppChar.size)) {
+                                    stepMeleeAnimate(opp, oppMoveCfg);
+                                    applyMeleeHit(opp, my, oppNum, myChar, oppMoveCfg);
+                                    sendData({ 
+                                        type: 'action_hit', 
+                                        actionType: opp.attackType, 
+                                        target: myNum, 
+                                        facingRight: opp.facingRight,
+                                        myHealth: opp.health,
+                                        oppHealth: my.health
+                                    });
+                                    if (my.health <= 0) {
+                                        sendData({ 
+                                            type: 'game_over', 
+                                            winner: 2,
+                                            p1Health: gameState.mechas.player1.health,
+                                            p2Health: gameState.mechas.player2.health
+                                        });
+                                    }
+                                } else {
+                                    stepMeleeAnimate(opp, oppMoveCfg);
+                                }
+                                opp.attackRecovery = oppMoveCfg.recovery;
                             }
                         }
                     }
-                    if (my.attackType !== 'fireball') {
-                        sendData({ type: 'action_start', actionType: my.attackType, facingRight: my.facingRight });
+
+                    const now = Date.now();
+                    const positionChanged = Math.abs(my.x - lastPositionUpdate.x) > positionThreshold || Math.abs(my.y - lastPositionUpdate.y) > positionThreshold;
+                    const qiChanged = Math.round(my.qi) !== lastQiSent;
+                    
+                    if (isGameActive && (positionChanged || qiChanged) && now - lastPositionSendTime >= SEND_INTERVAL_POSITION) {
+                        sendData({ type: 'position', x: Math.round(my.x * 10) / 10, y: Math.round(my.y * 10) / 10, facingRight: my.facingRight, qi: Math.round(my.qi), isCharging: my.isCharging });
+                        lastPositionUpdate.x = my.x; lastPositionUpdate.y = my.y; lastPositionSendTime = now;
+                        lastQiSent = Math.round(my.qi);
                     }
+                    
+                    // 主机定期同步完整状态
+                    const myHealth = Math.round(my.health);
+                    const myLastHealth = lastHealthValue[myNum];
+                    const oppHealth = Math.round(opp.health);
+                    const oppLastHealth = lastHealthValue[oppNum];
+                    const healthChanged = myHealth !== myLastHealth || oppHealth !== oppLastHealth;
+                    
+                    if (isGameActive && (healthChanged || now - lastHealthSendTime >= SEND_INTERVAL_HEALTH)) {
+                        sendData({ 
+                            type: 'state_update', 
+                            p1Health: Math.round(gameState.mechas.player1.health),
+                            p2Health: Math.round(gameState.mechas.player2.health)
+                        });
+                        lastHealthValue.player1 = Math.round(gameState.mechas.player1.health);
+                        lastHealthValue.player2 = Math.round(gameState.mechas.player2.health);
+                        lastHealthSendTime = now;
+                    }
+                } else {
+                    // ========== 客机逻辑 ==========
+                    // 客机只做本地输入和简单的移动预测
+                    const prevDefending = my.isDefending;
+                    stepPlayerMove(my, myChar, kb);
+                    stepPlayerAttack(my, myChar, kb);
+                    stepPlayerChargeQi(my, myChar, kb);
+
+                    if (myChar.hasBlock && my.isDefending !== prevDefending) {
+                        sendData({ type: 'defense_update', isDefending: my.isDefending });
+                    }
+
+                    if (my.attackWindup === 1 && my.hitStun === 0) {
+                        const moveCfg = MOVES[my.attackType];
+                        if (moveCfg) {
+                            if (moveCfg.type === 'projectile') {
+                                // 客机检查气够不够，但实际消耗由主机处理
+                                if (my.qi < 25) {
+                                    my.attackWindup = 0;
+                                    my.attackType = null;
+                                    return;
+                                }
+                                my.attackRecovery = moveCfg.recovery;
+                                const isSuper = my.qi >= 100;
+                                // 本地临时减气做视觉效果，等主机同步修正
+                                if (isSuper) {
+                                    my.qi = 0;
+                                } else {
+                                    my.qi = Math.max(0, my.qi - 25);
+                                }
+                                // 客机本地也要添加火球，否则看不到动画！
+                                stepProjectileExecute(my, myNum, myChar, moveCfg, isSuper);
+                                sendData({ type: 'projectile_create', projectileType: my.attackType, isSuper: !!isSuper, x: my.x + myChar.size/2 + (my.facingRight ? 40 : -40), y: my.y + myChar.size/2 - 20, vx: my.facingRight ? moveCfg.speed : -moveCfg.speed });
+                            } else {
+                                stepMeleeAnimate(my, moveCfg);
+                                my.attackRecovery = moveCfg.recovery;
+                            }
+                        }
+                        if (my.attackType !== 'fireball') {
+                            sendData({ type: 'action_start', actionType: my.attackType, facingRight: my.facingRight });
+                        }
+                    }
+
+                    // 客机只发送自己的位置信息
+                    const now = Date.now();
+                    const positionChanged = Math.abs(my.x - lastPositionUpdate.x) > positionThreshold || Math.abs(my.y - lastPositionUpdate.y) > positionThreshold;
+                    const qiChanged = Math.round(my.qi) !== lastQiSent;
+                    
+                    if (isGameActive && (positionChanged || qiChanged) && now - lastPositionSendTime >= SEND_INTERVAL_POSITION) {
+                        // 客机只发送位置、朝向、气值，不发送健康值（健康值由主机权威决定）
+                        sendData({ type: 'position', x: Math.round(my.x * 10) / 10, y: Math.round(my.y * 10) / 10, facingRight: my.facingRight, qi: Math.round(my.qi), isCharging: my.isCharging });
+                        lastPositionUpdate.x = my.x; lastPositionUpdate.y = my.y; lastPositionSendTime = now;
+                        lastQiSent = Math.round(my.qi);
+                    }
+                    // 客机不发送状态更新！完全信任主机状态
                 }
 
-                const now = Date.now();
-                const positionChanged = Math.abs(my.x - lastPositionUpdate.x) > positionThreshold || Math.abs(my.y - lastPositionUpdate.y) > positionThreshold;
-                
-                if (isGameActive && positionChanged && now - lastPositionSendTime >= SEND_INTERVAL_POSITION) {
-                    sendData({ type: 'position', x: Math.round(my.x * 10) / 10, y: Math.round(my.y * 10) / 10, facingRight: my.facingRight });
-                    lastPositionUpdate.x = my.x; lastPositionUpdate.y = my.y; lastPositionSendTime = now;
-                }
-
-                if (opponentData) {
+                if (!isHost && opponentData) {
+                    // 只有客机才执行这段平滑插值和状态同步代码！主机不需要，因为主机有自己的权威状态
                     const opponentNum = myPlayerId === 1 ? 'player2' : 'player1';
                     const opponent = gameState.mechas[opponentNum];
                     if (opponentData.x !== undefined) opponentTargetX = opponentData.x;
@@ -2020,8 +2666,14 @@
                     if (opponentData.isDefending !== undefined) opponent.isDefending = opponentData.isDefending;
                     if (opponentData.attackType !== undefined) opponent.attackType = opponentData.attackType;
                     if (opponentData.hitStun !== undefined) opponent.hitStun = opponentData.hitStun;
+                    if (opponentData.qi !== undefined) opponent.qi = opponentData.qi;
+                    if (opponentData.isCharging !== undefined) opponent.isCharging = opponentData.isCharging;
                     
-                    const lerp = 0.3;
+                    // 确保 UI 更新
+                    if (opponentData.health !== undefined) updateHealthUI();
+                    if (opponentData.qi !== undefined) updateQiUI();
+                    
+                    const lerp = 0.45;
                     opponentDisplayX += (opponentTargetX - opponentDisplayX) * lerp;
                     opponentDisplayY += (opponentTargetY - opponentDisplayY) * lerp;
                     opponent.x = opponentDisplayX;
@@ -2030,32 +2682,62 @@
             } else {
                 stepPlayerMove(p1, c1, CHARACTER_CONTROLS[c1.id]);
                 stepPlayerAttack(p1, c1, CHARACTER_CONTROLS[c1.id]);
+                stepPlayerChargeQi(p1, c1, CHARACTER_CONTROLS[c1.id]);
                 if (p1.attackWindup === 1 && p1.hitStun === 0) {
                     const moveCfg = MOVES[p1.attackType];
                     if (moveCfg) {
-                        if (moveCfg.type === 'projectile') { p1.attackCooldown = moveCfg.cooldown; stepProjectileExecute(p1, 'player1', c1, moveCfg); }
+                        if (moveCfg.type === 'projectile') { 
+                            p1.attackRecovery = moveCfg.recovery; 
+                            const isSuper = p1.qi >= 100; 
+                            if (isSuper) {
+                                p1.qi = 0;
+                            } else if (p1.qi >= 25) {
+                                p1.qi = Math.max(0, p1.qi - 25);
+                            } else {
+                                p1.attackWindup = 0;
+                                p1.attackType = null;
+                            }
+                            stepProjectileExecute(p1, 'player1', c1, moveCfg, isSuper); 
+                        }
                         else {
                             stepMeleeAnimate(p1, moveCfg);
                             if (!skipAttackHit && checkHitboxCollision(p1, p2, p1.attackType, moveCfg.range, c1.size)) applyMeleeHit(p1, p2, 'player1', c2, moveCfg);
                             if (skipAttackHit) skipAttackHit = false;
+                            p1.attackRecovery = moveCfg.recovery;
                         }
                     }
                 }
 
                 stepPlayerMove(p2, c2, CHARACTER_CONTROLS[c2.id]);
                 stepPlayerAttack(p2, c2, CHARACTER_CONTROLS[c2.id]);
+                stepPlayerChargeQi(p2, c2, CHARACTER_CONTROLS[c2.id]);
                 if (p2.attackWindup === 1 && p2.hitStun === 0) {
                     const moveCfg2 = MOVES[p2.attackType];
                     if (moveCfg2) {
-                        if (moveCfg2.type === 'projectile') { p2.attackCooldown = moveCfg2.cooldown; stepProjectileExecute(p2, 'player2', c2, moveCfg2); }
+                        if (moveCfg2.type === 'projectile') { 
+                            p2.attackRecovery = moveCfg2.recovery; 
+                            const isSuper2 = p2.qi >= 100; 
+                            if (isSuper2) {
+                                p2.qi = 0;
+                            } else if (p2.qi >= 25) {
+                                p2.qi = Math.max(0, p2.qi - 25);
+                            } else {
+                                p2.attackWindup = 0;
+                                p2.attackType = null;
+                            }
+                            stepProjectileExecute(p2, 'player2', c2, moveCfg2, isSuper2); 
+                        }
                         else {
                             stepMeleeAnimate(p2, moveCfg2);
                             if (!skipAttackHit && checkHitboxCollision(p2, p1, p2.attackType, moveCfg2.range, c2.size)) applyMeleeHit(p2, p1, 'player2', c1, moveCfg2);
                             if (skipAttackHit) skipAttackHit = false;
+                            p2.attackRecovery = moveCfg2.recovery;
                         }
                     }
                 }
             }
+            updateQiUI();
+            prevKeys = {...keys};
         }
 
         function updateHealthUI() {
@@ -2075,11 +2757,27 @@
             if (p2.health <= c2.maxHealth * 0.15) h2.classList.add('critical');
         }
 
+        function updateQiUI() {
+            if (!gameState) return;
+            const p1 = gameState.mechas.player1, p2 = gameState.mechas.player2;
+            const bar1 = document.getElementById('qiBar1'), bar2 = document.getElementById('qiBar2');
+            const val1 = document.getElementById('qiValue1'), val2 = document.getElementById('qiValue2');
+            const p1Pct = (p1.qi / 100) * 100, p2Pct = (p2.qi / 100) * 100;
+            bar1.style.width = p1Pct + '%'; bar2.style.width = p2Pct + '%';
+            bar1.className = 'qi-bar-fill'; bar2.className = 'qi-bar-fill';
+            if (p1.qi >= 100) bar1.classList.add('full');
+            if (p2.qi >= 100) bar2.classList.add('full');
+            val1.textContent = Math.round(p1.qi) + '/100';
+            val2.textContent = Math.round(p2.qi) + '/100';
+        }
+
         function showGameOver() {
             document.getElementById('gameOver').classList.add('show');
+            playGameOverMusic();
             const wt = document.getElementById('winnerText');
             const winnerChar = gameState.mechas[gameState.winner];
             const winnerName = winnerChar ? getChar(winnerChar.characterId).name : (gameState.winner === 'player1' ? '红方' : '蓝方');
+            syncLogEntry('game_over', `winner=${gameState.winner}`);
             wt.textContent = winnerName + '胜利!';
             if (winnerChar) {
                 const cfg = getChar(winnerChar.characterId);
@@ -2090,9 +2788,19 @@
                 if (gameState.winner === 'player1') { wt.className = 'winner-red'; }
                 else { wt.className = 'winner-blue'; }
             }
+            
+            const rBtn = document.getElementById('rematchBtn');
+            rematchState = { myReady: false, oppReady: false };
+            if (gameMode === 'online') {
+                rBtn.textContent = '再来一次';
+                rBtn.disabled = false;
+            } else {
+                rBtn.textContent = '再来一次';
+                rBtn.disabled = false;
+            }
         }
 
-        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+        function gameLoop() { gameFrame++; update(); draw(); requestAnimationFrame(gameLoop); }
 
         document.getElementById('singleBtn').addEventListener('click', () => { startSingleGame(); initGameState(); });
         document.getElementById('onlineBtn').addEventListener('click', () => { startOnlineGame(); showOnlineLobby(); });
@@ -2121,6 +2829,7 @@
             showGame();
             restartGame();
             isGameActive = true;
+            syncLogEntry('game_start', `playerId=${myPlayerId}`);
             
             debugLog(`本机角色: 玩家${myPlayerId}，发送游戏状态同步...`);
             sendData({
@@ -2147,8 +2856,6 @@
         });
         document.getElementById('clearSyncLogBtn').addEventListener('click', () => {
             syncLog = [];
-            sentLog = [];
-            recvLog = [];
         });
 
         window.addEventListener('keydown', (e) => {
