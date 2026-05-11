@@ -860,7 +860,7 @@
     </div>
 
     <script>
-        const GAME_VERSION = 'v1.2.0';
+        const GAME_VERSION = 'v2.0.1';
         document.title = `像素风机甲游戏 ${GAME_VERSION}`;
         document.getElementById('gameTitle').textContent = `像素风机甲对战 ${GAME_VERSION}`;
         
@@ -1523,7 +1523,7 @@
                             const rBtn = document.getElementById('rematchBtn');
                             rBtn.textContent = '双方已确认，开始...';
                             rBtn.disabled = true;
-                            startOnlineRematch();
+                            if (isHost) startOnlineRematch();
                         } else {
                             const rBtn = document.getElementById('rematchBtn');
                             rBtn.textContent = '对手请求再战！点击接受';
@@ -1538,7 +1538,7 @@
                             const rBtn = document.getElementById('rematchBtn');
                             rBtn.textContent = '双方已确认，开始...';
                             rBtn.disabled = true;
-                            startOnlineRematch();
+                            if (isHost) startOnlineRematch();
                         }
                         break;
                 }
@@ -1715,7 +1715,6 @@
                             const rBtn = document.getElementById('rematchBtn');
                             rBtn.textContent = '双方已确认，开始...';
                             rBtn.disabled = true;
-                            startOnlineRematch();
                         }
                         break;
                 }
@@ -1927,13 +1926,15 @@
             restartGame();
             isGameActive = true;
             showGame();
-            sendData({
-                type: 'game_state_sync',
-                playerId: myPlayerId,
-                player1Char: DEFAULT_CHAR_SELECTION.player1,
-                player2Char: DEFAULT_CHAR_SELECTION.player2,
-                isStart: true
-            });
+            if (isHost) {
+                sendData({
+                    type: 'game_state_sync',
+                    playerId: myPlayerId,
+                    player1Char: DEFAULT_CHAR_SELECTION.player1,
+                    player2Char: DEFAULT_CHAR_SELECTION.player2,
+                    isStart: true
+                });
+            }
             rematchState = { myReady: false, oppReady: false };
         }
 

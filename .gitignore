@@ -1,0 +1,9 @@
+log/
+production-*/
+*.exe
+*.bat
+*.backup
+*.txt
+http-server.js
+package.json
+encoded.txt
