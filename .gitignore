@@ -1,9 +1,36 @@
-log/
-production-*/
+# Backup files
+*.backup.*
+
+# Windows
 *.exe
 *.bat
-*.backup
-*.txt
+*.lnk
+
+# Build output
+production-*/
+
+# Logs
+*.log
+logs/
+
+# Development memory (local only, not uploaded)
+memory.md
+
+# Generated favicon scripts (optional helpers)
+*.ps1
+*.js
+*.py
+
+# Development tools (not part of game)
+favicon-generator.html
+peerjs-tester.html
+sprite-tool.html
+image-editor.html
+sprite-config.html
+demo.html
+
+# Old production builds
+anime.png
+encoded.txt
 http-server.js
 package.json
-encoded.txt
