@@ -12,6 +12,7 @@ production-*/
 # Logs
 *.log
 logs/
+log/
 
 # Development memory (local only, not uploaded)
 memory.md
