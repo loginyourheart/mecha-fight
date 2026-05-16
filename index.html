@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>像素风机甲对战 - 联机版</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23000' stroke='%23ff4444' stroke-width='2'/><rect x='8' y='4' width='16' height='8' fill='%23555'/><rect x='6' y='6' width='20' height='4' fill='%23ff4444'/><rect x='8' y='10' width='16' height='4' fill='%23ffff00'/><rect x='8' y='14' width='6' height='4' fill='%23fff'/><rect x='18' y='14' width='4' height='4' fill='%23000'/><rect x='6' y='18' width='20' height='8' fill='%23555'/><rect x='8' y='26' width='16' height='4' fill='%23ff4444'/></svg>">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
 
@@ -717,6 +718,153 @@
         .debug-console.show {
             display: block;
         }
+
+        .server-select-panel {
+            background: rgba(20, 30, 40, 0.95);
+            border: 2px solid #3a5f7a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .server-select-panel h4 {
+            color: #7ec8e3;
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .server-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .server-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(100, 150, 180, 0.3);
+        }
+
+        .server-option label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .server-option input[type="radio"] {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .server-option .server-name {
+            color: #ccc;
+            font-size: 13px;
+            min-width: 70px;
+        }
+
+        .server-option .server-host {
+            color: #5a9;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .server-custom-host {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #456;
+            border-radius: 4px;
+            padding: 4px 8px;
+            color: #abc;
+            font-size: 11px;
+            width: 150px;
+            font-family: monospace;
+        }
+
+        .server-custom-host:focus {
+            outline: none;
+            border-color: #7ec8e3;
+        }
+
+        .server-status {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .server-status.online {
+            background: #2a5;
+            color: #fff;
+        }
+
+        .server-status.offline {
+            background: #555;
+            color: #ccc;
+        }
+
+        .server-status.testing {
+            background: #c80;
+            color: #fff;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .server-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .lobby-btn.test {
+            background: #2a5;
+            flex: 1;
+        }
+
+        .lobby-btn.test:hover {
+            background: #3b6;
+        }
+
+        .lobby-btn.settings {
+            background: #456;
+            flex: 1;
+        }
+
+        .lobby-btn.settings:hover {
+            background: #567;
+        }
+
+        .connection-status-display {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 4px;
+            color: #aaa;
+            font-size: 12px;
+            min-height: 20px;
+        }
+
+        .connection-status-display.connecting {
+            color: #fc0;
+        }
+
+        .connection-status-display.error {
+            color: #f55;
+        }
+
+        .connection-status-display.success {
+            color: #5f5;
+        }
     </style>
 </head>
 <body>
@@ -733,6 +881,32 @@
 
         <div class="online-lobby" id="onlineLobby">
             <h2>互联网P2P联机</h2>
+            <div class="server-select-panel">
+                <h4>服务器选择</h4>
+                <div class="server-options">
+                    <div class="server-option">
+                        <label>
+                            <input type="radio" name="serverSelect" value="0" checked>
+                            <span class="server-name">主服务器</span>
+                            <span class="server-host">0.peerjs.com</span>
+                        </label>
+                        <span class="server-status" id="serverStatus0">离线</span>
+                    </div>
+                    <div class="server-option">
+                        <label>
+                            <input type="radio" name="serverSelect" value="1">
+                            <span class="server-name">备用服务器</span>
+                            <input type="text" class="server-custom-host" id="customServerHost" placeholder="输入服务器地址">
+                        </label>
+                        <span class="server-status" id="serverStatus1">离线</span>
+                    </div>
+                </div>
+                <div class="server-actions">
+                    <button class="lobby-btn test" id="testServersBtn">测试服务器</button>
+                    <button class="lobby-btn settings" id="editServerBtn">编辑服务器</button>
+                </div>
+                <div class="connection-status-display" id="connectionStatusDisplay"></div>
+            </div>
             <div class="lobby-container">
                 <div class="lobby-panel create">
                     <h3>创建房间</h3>
@@ -863,7 +1037,157 @@
         const GAME_VERSION = 'v2.0.1';
         document.title = `像素风机甲游戏 ${GAME_VERSION}`;
         document.getElementById('gameTitle').textContent = `像素风机甲对战 ${GAME_VERSION}`;
-        
+
+        const DEFAULT_SERVERS = [
+            { host: '0.peerjs.com', port: 9000, path: '/', secure: true },
+            { host: '', port: 9000, path: '/', secure: false }
+        ];
+
+        const serverHosts = ['0.peerjs.com', ''];
+
+        function getServerConfig() {
+            const selectedIndex = getSelectedServerIndex();
+            if (selectedIndex === 0) {
+                return { host: '0.peerjs.com', port: 9000, path: '/', secure: true };
+            } else {
+                const customHost = document.getElementById('customServerHost').value.trim();
+                if (customHost) {
+                    const isSecure = customHost.startsWith('https://');
+                    const hostOnly = customHost.replace(/^https?:\/\//, '');
+                    return { host: hostOnly, port: 9000, path: '/', secure: isSecure || customHost.startsWith('https') };
+                }
+                return null;
+            }
+        }
+
+        function updateServerSelectUI() {
+            const selectedIndex = getSelectedServerIndex();
+            const radios = document.querySelectorAll('input[name="serverSelect"]');
+            radios.forEach((radio, index) => {
+                radio.checked = (index === selectedIndex);
+            });
+            const customInput = document.getElementById('customServerHost');
+            if (selectedIndex === 1) {
+                customInput.disabled = false;
+            } else {
+                customInput.disabled = true;
+            }
+        }
+
+        function getSelectedServerIndex() {
+            const selected = document.querySelector('input[name="serverSelect"]:checked');
+            return selected ? parseInt(selected.value) : 0;
+        }
+
+        function setServerStatus(index, status, text) {
+            const statusEl = document.getElementById('serverStatus' + index);
+            if (statusEl) {
+                statusEl.className = 'server-status ' + status;
+                statusEl.textContent = text;
+            }
+        }
+
+        async function testSingleServer(index) {
+            const testPeerId = 'test-' + Math.random().toString(36).substring(2, 8);
+            setServerStatus(index, 'testing', '测试中');
+
+            const testConfig = index === 0
+                ? { host: '0.peerjs.com', port: 9000, path: '/', secure: true }
+                : { host: document.getElementById('customServerHost').value.trim(), port: 9000, path: '/', secure: false };
+
+            if (index === 1 && !testConfig.host) {
+                setServerStatus(1, 'offline', '未配置');
+                return false;
+            }
+
+            return new Promise((resolve) => {
+                const testPeer = new Peer(testPeerId, {
+                    host: testConfig.host,
+                    port: testConfig.port,
+                    path: testConfig.path,
+                    secure: testConfig.secure,
+                    timeout: 5000
+                });
+
+                const timer = setTimeout(() => {
+                    testPeer.destroy();
+                    setServerStatus(index, 'offline', '超时');
+                    resolve(false);
+                }, 5000);
+
+                testPeer.on('open', () => {
+                    clearTimeout(timer);
+                    testPeer.destroy();
+                    setServerStatus(index, 'online', '在线');
+                    resolve(true);
+                });
+
+                testPeer.on('error', (err) => {
+                    clearTimeout(timer);
+                    testPeer.destroy();
+                    if (err.type === 'network' || err.type === 'server-error') {
+                        setServerStatus(index, 'offline', '离线');
+                    } else if (err.type === 'unavailable-id') {
+                        setServerStatus(index, 'online', '在线');
+                        resolve(true);
+                    } else {
+                        setServerStatus(index, 'offline', '离线');
+                    }
+                    resolve(false);
+                });
+            });
+        }
+
+        async function testAllServers() {
+            updateConnectionStatus(true, 'connecting', '正在测试服务器...');
+            const btn = document.getElementById('testServersBtn');
+            btn.disabled = true;
+            btn.textContent = '测试中...';
+
+            setServerStatus(0, 'testing', '测试中');
+            setServerStatus(1, 'testing', '测试中');
+
+            const result0 = await testSingleServer(0);
+            const result1 = await testSingleServer(1);
+
+            btn.disabled = false;
+            btn.textContent = '测试服务器';
+
+            const onlineCount = [result0, result1].filter(r => r).length;
+            if (onlineCount > 0) {
+                updateConnectionStatus(false, 'success', `测试完成: ${onlineCount} 个服务器可用`);
+            } else {
+                updateConnectionStatus(false, 'error', '所有服务器均不可用');
+            }
+        }
+
+        function updateConnectionStatus(isCreating, status, message) {
+            const display = document.getElementById('connectionStatusDisplay');
+            if (display) {
+                display.textContent = message;
+                display.className = 'connection-status-display ' + status;
+            }
+        }
+
+        function openSettings(type) {
+            if (type === 'server') {
+                const selectedIndex = getSelectedServerIndex();
+                if (selectedIndex === 1) {
+                    const customInput = document.getElementById('customServerHost');
+                    customInput.focus();
+                    customInput.select();
+                } else {
+                    document.querySelector('input[name="serverSelect"][value="1"]').checked = true;
+                    updateServerSelectUI();
+                    setTimeout(() => {
+                        const customInput = document.getElementById('customServerHost');
+                        customInput.focus();
+                        customInput.select();
+                    }, 100);
+                }
+            }
+        }
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -1122,6 +1446,7 @@
             document.getElementById('modeSelect').style.display = 'none';
             document.getElementById('onlineLobby').classList.add('show');
             document.getElementById('waitingRoom').classList.remove('show');
+            updateServerSelectUI();
             debugLog('已进入联机大厅');
         }
 
@@ -1259,17 +1584,31 @@
         function initPeer() {
             const randomId = 'mf' + Math.random().toString(36).substring(2, 10);
             debugLog(`正在初始化Peer，ID: ${randomId}...`);
+            updateConnectionStatus(true, 'connecting', `正在连接服务器...`);
+
+            const serverConfig = getServerConfig();
+            if (!serverConfig) {
+                showError('请先选择并配置服务器');
+                updateConnectionStatus(false, 'error', '服务器未配置');
+                return;
+            }
+
+            debugLog(`使用服务器: ${serverConfig.host}`);
 
             peer = new Peer(randomId, {
+                host: serverConfig.host,
+                port: serverConfig.port,
+                path: serverConfig.path,
+                secure: serverConfig.secure,
                 debug: 2,
                 config: {
                     iceServers: [
-                        { url: 'stun:stun.l.google.com:19302' },
-                        { url: 'stun:stun1.l.google.com:19302' },
-                        { url: 'stun:stun2.l.google.com:19302' },
-                        { url: 'turn:numb.viagenie.ca', credential: 'muazkh', username: 'webrtc@live.com' },
-                        { url: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo' },
-                        { url: 'turn:turnserver.openvpn.net:3478', credential: 'openvpn', username: 'openvpn' }
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        { urls: 'turn:numb.viagenie.ca', credential: 'muazkh', username: 'webrtc@live.com' },
+                        { urls: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo' },
+                        { urls: 'turn:turnserver.openvpn.net:3478', credential: 'openvpn', username: 'openvpn' }
                     ]
                 }
             });
@@ -1282,6 +1621,7 @@
                 showWaitingRoom(id);
                 document.getElementById('connectionStatus').textContent = '房间已创建';
                 document.getElementById('connectionStatus').className = 'connection-status connected';
+                updateConnectionStatus(false, 'success', `已连接到 ${serverConfig.host}`);
                 debugLog('等待对手加入...');
             });
 
@@ -1298,6 +1638,7 @@
 
             peer.on('error', (err) => {
                 debugLog(`Peer错误: ${err.type} - ${err.message || '无详细信息'}`);
+                updateConnectionStatus(false, 'error', `连接错误: ${err.type}`);
                 if (err.type === 'unavailable-id') {
                     debugLog('ID已被使用，重新生成...');
                     initPeer();
@@ -1306,7 +1647,7 @@
                 } else if (err.type === 'network') {
                     showError('网络错误，请检查网络连接');
                 } else if (err.type === 'server-error') {
-                    showError('服务器连接失败，请稍后重试');
+                    showError(`服务器 ${serverConfig.host} 连接失败，请尝试其他服务器`);
                 } else if (err.message && err.message.includes('ICE failed')) {
                     showError('NAT穿透失败！请尝试以下方法:\n1. 关闭VPN或代理\n2. 切换网络(如手机热点)\n3. 重启路由器', true);
                 } else {
@@ -1318,6 +1659,7 @@
                 debugLog('与信令服务器断开连接');
                 document.getElementById('connectionStatus').textContent = '连接断开';
                 document.getElementById('connectionStatus').className = 'connection-status disconnected';
+                updateConnectionStatus(false, 'error', '与服务器断开连接');
             });
 
             peer.on('close', () => {
@@ -1328,18 +1670,32 @@
         function connectToPeer(peerId) {
             const cleanId = peerId.trim().toLowerCase();
             debugLog(`正在连接到: ${cleanId}`);
+            updateConnectionStatus(true, 'connecting', `正在连接服务器...`);
+
+            const serverConfig = getServerConfig();
+            if (!serverConfig) {
+                showError('请先选择并配置服务器');
+                updateConnectionStatus(false, 'error', '服务器未配置');
+                return;
+            }
+
+            debugLog(`使用服务器: ${serverConfig.host}`);
 
             if (!peer) {
-                peer = new Peer({ 
+                peer = new Peer({
+                    host: serverConfig.host,
+                    port: serverConfig.port,
+                    path: serverConfig.path,
+                    secure: serverConfig.secure,
                     debug: 2,
                     config: {
                         iceServers: [
-                            { url: 'stun:stun.l.google.com:19302' },
-                            { url: 'stun:stun1.l.google.com:19302' },
-                            { url: 'stun:stun2.l.google.com:19302' },
-                            { url: 'turn:numb.viagenie.ca', credential: 'muazkh', username: 'webrtc@live.com' },
-                            { url: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo' },
-                            { url: 'turn:turnserver.openvpn.net:3478', credential: 'openvpn', username: 'openvpn' }
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' },
+                            { urls: 'turn:numb.viagenie.ca', credential: 'muazkh', username: 'webrtc@live.com' },
+                            { urls: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo' },
+                            { urls: 'turn:turnserver.openvpn.net:3478', credential: 'openvpn', username: 'openvpn' }
                         ]
                     }
                 });
@@ -1352,6 +1708,7 @@
                 isHost = false;
                 myPlayerId = 2;
                 showWaitingRoom(cleanId);
+                updateConnectionStatus(false, 'success', `已连接到 ${serverConfig.host}`);
             };
 
             if (peer.open) {
@@ -1362,8 +1719,11 @@
 
             peer.on('error', (err) => {
                 debugLog(`连接Peer错误: ${err.type}`);
+                updateConnectionStatus(false, 'error', `连接错误: ${err.type}`);
                 if (err.type === 'peer-unavailable') {
                     showError(`找不到房间 "${cleanId}"，请确认房间号是否正确`);
+                } else if (err.type === 'server-error') {
+                    showError(`服务器 ${serverConfig.host} 连接失败，请尝试其他服务器`);
                 } else {
                     showError(`连接失败: ${err.type}`);
                 }
@@ -2806,6 +3166,17 @@
         document.getElementById('singleBtn').addEventListener('click', () => { startSingleGame(); initGameState(); });
         document.getElementById('onlineBtn').addEventListener('click', () => { startOnlineGame(); showOnlineLobby(); });
         document.getElementById('backToModeBtn').addEventListener('click', backToMenu);
+        document.getElementById('testServersBtn').addEventListener('click', () => { testAllServers(); });
+        document.getElementById('editServerBtn').addEventListener('click', () => { openSettings('server'); });
+
+        document.querySelectorAll('input[name="serverSelect"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                updateServerSelectUI();
+                const selectedIndex = getSelectedServerIndex();
+                setServerStatus(selectedIndex, 'offline', '离线');
+            });
+        });
+
         document.getElementById('createRoomBtn').addEventListener('click', () => { initPeer(); });
         document.getElementById('joinRoomBtn').addEventListener('click', () => {
             const code = document.getElementById('roomCodeInput').value.trim();
@@ -2871,6 +3242,7 @@
 
         window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
+        updateServerSelectUI();
         showModeSelect();
         gameLoop();
     </script>

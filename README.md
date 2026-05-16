@@ -87,11 +87,41 @@ v1.2.0 主要更新：
 ### 技术说明
 
 - 使用 PeerJS 实现 P2P WebRTC 联机
-- 无需公网服务器，仅需信令服务器（使用公共 PeerJS 服务器）
+- 无需公网服务器，仅需信令服务器（使用公共 PeerJS 服务器或自建）
 - 适合局域网或具有NAT穿透条件的网络环境
 - 位置同步使用 Lerp 平滑插值（系数 0.45）
 - 游戏结束后可导出JSON格式完整日志
 - **同步架构**：主机血量权威，气值本地控制（格斗游戏模式）
+
+### 自建信令服务器
+
+如果你想使用自己的信令服务器，可以使用以下开源项目：
+
+[![SignalServer](https://img.shields.io/badge/SignalServer-GitHub-blue)](https://github.com/loginyourheart/SignalServer)
+
+**SignalServer** - 轻量级 PeerJS 信令服务器（使用 Rust 编写）
+
+- 高性能、低内存占用
+- 简单易用的配置
+- 完全开源，可自行托管
+
+**构建和运行**：
+
+1. 克隆项目：
+   ```bash
+   git clone https://github.com/loginyourheart/SignalServer.git
+   cd SignalServer
+   ```
+
+2. 编译运行：
+   ```bash
+   cargo build --release
+   cargo run --release
+   ```
+
+3. 在游戏设置中配置你的服务器地址和端口
+
+详细说明请参考：[SignalServer 项目主页](https://github.com/loginyourheart/SignalServer)
 
 ### 版本历史
 
