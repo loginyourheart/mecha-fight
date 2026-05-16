@@ -22,7 +22,10 @@
             align-items: center;
             justify-content: center;
             font-family: 'Press Start 2P', cursive;
-            font-size: 150%;
+            font-size: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
         }
 
         h1 {
@@ -42,6 +45,8 @@
         canvas {
             display: block;
             background: #0a0a1a;
+            max-width: 100%;
+            height: auto;
         }
 
         .mode-select {
@@ -110,10 +115,40 @@
             background: linear-gradient(180deg, #0a0a20 0%, #1a1a40 50%, #0a0a20 100%);
             display: none;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
-            z-index: 150;
+            z-index: 250;
             padding: 20px;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        
+        .lobby-main-content {
+            display: flex;
+            gap: 30px;
+            width: 100%;
+            max-width: 95vw;
+            flex: 1;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        
+        .lobby-left-panel {
+            flex: 1;
+            min-width: 300px;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .lobby-right-panel {
+            flex: 0.8;
+            min-width: 300px;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .online-lobby.show {
@@ -123,21 +158,23 @@
         .online-lobby h2 {
             font-size: 27px;
             color: #00ffff;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px #00ffff;
         }
 
         .lobby-container {
             display: flex;
-            gap: 40px;
-            margin-bottom: 30px;
+            gap: 25px;
+            margin-bottom: 20px;
         }
 
         .lobby-panel {
-            background: rgba(0,0,0,0.5);
-            border: 2px solid #444;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #00ffff;
             border-radius: 8px;
-            padding: 20px;
-            min-width: 320px;
+            padding: 15px;
+            min-width: 280px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.15);
         }
 
         .lobby-panel h3 {
@@ -264,6 +301,20 @@
             border: 2px solid #00ffff;
             border-radius: 8px;
             margin-bottom: 15px;
+        }
+
+        .room-name-display {
+            font-size: 24px;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            background: #222;
+            padding: 15px 30px;
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            max-width: 100%;
+            word-wrap: break-word;
+            text-align: center;
         }
 
         .copy-btn {
@@ -677,6 +728,231 @@
             font-family: monospace;
         }
 
+        /* 暂停菜单 */
+        .pause-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 500;
+        }
+
+        .pause-menu.show {
+            display: flex;
+        }
+
+        .pause-menu h2 {
+            color: #00ffff;
+            font-size: 36px;
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px #00ffff;
+        }
+
+        .pause-menu button {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            padding: 15px 40px;
+            margin: 10px;
+            background: #444;
+            border: 3px solid #666;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 250px;
+        }
+
+        .pause-menu button:hover {
+            background: #555;
+            border-color: #00ffff;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0,255,255,0.3);
+        }
+
+        /* 设置面板 */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 600;
+        }
+
+        .settings-panel.show {
+            display: flex;
+        }
+
+        .settings-content {
+            background: #1a1a2e;
+            border: 3px solid #444;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .settings-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff4444;
+            color: #fff;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .settings-close:hover {
+            background: #ff6666;
+        }
+
+        .settings-content h2 {
+            color: #00ffff;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .settings-content h3 {
+            color: #ff9900;
+            font-size: 16px;
+            margin: 15px 0 10px 0;
+        }
+
+        .keybind-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+        }
+
+        .keybind-row span {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .keybind-btn {
+            background: #333;
+            border: 2px solid #555;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            cursor: pointer;
+            min-width: 120px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .keybind-btn:hover {
+            background: #444;
+            border-color: #00ffff;
+        }
+
+        .keybind-btn.recording {
+            background: #00aa00;
+            border-color: #00ff00;
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            50% { background: #00cc00; }
+        }
+
+        .server-row {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+
+        .server-row > span {
+            color: #00ffff;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .server-inputs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .server-inputs input[type="text"],
+        .server-inputs input[type="number"] {
+            background: #000;
+            border: 2px solid #333;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .server-inputs input[type="text"] {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .server-inputs input[type="number"] {
+            width: 80px;
+        }
+
+        .server-inputs label {
+            color: #aaa;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .settings-btn {
+            background: #00aa00;
+            border: none;
+            color: #fff;
+            padding: 10px 25px;
+            border-radius: 4px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        .settings-btn:hover {
+            background: #00cc00;
+        }
+
+        .settings-btn.secondary {
+            background: #666;
+        }
+
+        .settings-btn.secondary:hover {
+            background: #777;
+        }
+
         .error-message {
             position: absolute;
             bottom: 20px;
@@ -719,151 +995,320 @@
             display: block;
         }
 
+        /* 服务器选择面板 */
         .server-select-panel {
-            background: rgba(20, 30, 40, 0.95);
-            border: 2px solid #3a5f7a;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #444;
             border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
         }
 
-        .server-select-panel h4 {
-            color: #7ec8e3;
-            margin: 0 0 12px 0;
-            font-size: 14px;
-            text-align: left;
+        .server-select-panel h3 {
+            color: #00ffff;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-align: center;
         }
 
         .server-options {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
         .server-option {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 10px 12px;
+            gap: 10px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 6px;
-            border: 1px solid rgba(100, 150, 180, 0.3);
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
         }
 
-        .server-option label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            flex: 1;
+        .server-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #00ffff;
+        }
+
+        .server-option.selected {
+            background: rgba(0, 255, 255, 0.15);
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
         }
 
         .server-option input[type="radio"] {
-            margin: 0;
+            width: 20px;
+            height: 20px;
             cursor: pointer;
         }
 
-        .server-option .server-name {
-            color: #ccc;
-            font-size: 13px;
-            min-width: 70px;
+        .server-option label {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
         }
 
-        .server-option .server-host {
-            color: #5a9;
-            font-size: 12px;
-            font-family: monospace;
+        .server-name {
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
         }
 
-        .server-custom-host {
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid #456;
-            border-radius: 4px;
-            padding: 4px 8px;
-            color: #abc;
+        .server-detail {
+            color: #aaa;
             font-size: 11px;
-            width: 150px;
-            font-family: monospace;
-        }
-
-        .server-custom-host:focus {
-            outline: none;
-            border-color: #7ec8e3;
         }
 
         .server-status {
             font-size: 11px;
-            padding: 3px 8px;
-            border-radius: 10px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: #444;
+            color: #888;
             min-width: 60px;
             text-align: center;
         }
 
         .server-status.online {
-            background: #2a5;
-            color: #fff;
+            background: #004400;
+            color: #00ff00;
         }
 
         .server-status.offline {
-            background: #555;
-            color: #ccc;
+            background: #440000;
+            color: #ff4444;
         }
 
         .server-status.testing {
-            background: #c80;
-            color: #fff;
+            background: #444400;
+            color: #ffff00;
             animation: pulse 1s infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+        .server-selected-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #008800;
+            color: #00ff00;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00ff00;
         }
 
         .server-actions {
             display: flex;
             gap: 10px;
-            margin-top: 12px;
-        }
-
-        .lobby-btn.test {
-            background: #2a5;
-            flex: 1;
-        }
-
-        .lobby-btn.test:hover {
-            background: #3b6;
-        }
-
-        .lobby-btn.settings {
-            background: #456;
-            flex: 1;
-        }
-
-        .lobby-btn.settings:hover {
-            background: #567;
+            justify-content: center;
+            margin-top: 10px;
         }
 
         .connection-status-display {
             margin-top: 10px;
             padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 4px;
+            font-size: 11px;
             color: #aaa;
-            font-size: 12px;
-            min-height: 20px;
+            text-align: center;
+            border: 1px solid #333;
         }
 
         .connection-status-display.connecting {
-            color: #fc0;
+            color: #ffff00;
+            border-color: #888800;
+        }
+
+        .connection-status-display.connected {
+            color: #00ff00;
+            border-color: #008800;
         }
 
         .connection-status-display.error {
-            color: #f55;
+            color: #ff4444;
+            border-color: #880000;
         }
 
-        .connection-status-display.success {
-            color: #5f5;
+        /* 房间列表面板 */
+        .room-list-panel {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            padding: 12px;
+            width: 100%;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .room-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .room-list-panel h3 {
+            color: #00ffff;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .refresh-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            padding: 6px 12px;
+            background: #0066aa;
+            border: 2px solid #0088cc;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #0088cc;
+            box-shadow: 0 0 10px rgba(0, 136, 204, 0.5);
+        }
+
+        .room-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+            min-height: 100px;
+            max-height: 300px;
+        }
+
+        .room-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .room-list::-webkit-scrollbar-track {
+            background: #111;
+            border-radius: 3px;
+        }
+
+        .room-list::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 3px;
+        }
+
+        .room-list::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .room-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .room-item:hover {
+            background: rgba(0, 255, 255, 0.1);
+            border-color: #00ffff;
+        }
+
+        .room-name {
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .room-status {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: #004400;
+            color: #00ff00;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .room-status.waiting {
+            background: #444400;
+            color: #ffff00;
+        }
+
+        .join-room-btn {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            padding: 6px 12px;
+            background: #008800;
+            border: 2px solid #00aa00;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .join-room-btn:hover {
+            background: #00aa00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        .no-rooms {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            padding: 20px;
+        }
+
+        .room-list-unavailable-panel {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            width: 100%;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .room-list-unavailable-panel h3 {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #ffaa00;
+            text-shadow: 0 0 5px rgba(255, 170, 0, 0.3);
+        }
+
+        .unavailable-message {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #aaa;
+            font-size: 11px;
+            line-height: 1.8;
+            text-align: center;
+        }
+
+        .unavailable-message p {
+            margin: 8px 0;
+        }
+
+        .unavailable-message .info {
+            color: #88ccff;
+        }
+
+        .unavailable-message .warning {
+            color: #ffaa00;
         }
     </style>
 </head>
@@ -881,53 +1326,92 @@
 
         <div class="online-lobby" id="onlineLobby">
             <h2>互联网P2P联机</h2>
-            <div class="server-select-panel">
-                <h4>服务器选择</h4>
-                <div class="server-options">
-                    <div class="server-option">
-                        <label>
-                            <input type="radio" name="serverSelect" value="0" checked>
-                            <span class="server-name">主服务器</span>
-                            <span class="server-host">0.peerjs.com</span>
-                        </label>
-                        <span class="server-status" id="serverStatus0">离线</span>
+            
+            <!-- 主内容区域 - 水平布局 -->
+            <div class="lobby-main-content">
+                <!-- 左侧：服务器选择和创建/加入房间 -->
+                <div class="lobby-left-panel">
+                    <!-- 服务器选择区域 -->
+                    <div class="server-select-panel">
+                        <h3>服务器选择</h3>
+                        <div class="server-options">
+                            <div class="server-option selected" data-index="0">
+                                <input type="radio" id="server0" name="server" checked>
+                                <label for="server0">
+                                    <span class="server-name">主服务器</span>
+                                    <span class="server-detail" id="server0Detail">0.peerjs.com:443</span>
+                                </label>
+                                <span class="server-status" id="server0Status">未测试</span>
+                                <span class="server-selected-badge">✓ 当前</span>
+                            </div>
+                            <div class="server-option" data-index="1">
+                                <input type="radio" id="server1" name="server">
+                                <label for="server1">
+                                    <span class="server-name">备用服务器</span>
+                                    <span class="server-detail" id="server1Detail">点击编辑配置</span>
+                                </label>
+                                <span class="server-status" id="server1Status">未配置</span>
+                                <span class="server-selected-badge" style="display: none;">✓ 当前</span>
+                            </div>
+                        </div>
+                        <div class="server-actions">
+                            <button class="settings-btn" id="testServersBtn">测试服务器</button>
+                            <button class="settings-btn secondary" id="editServersBtn" onclick="openSettings('server')">编辑服务器</button>
+                        </div>
                     </div>
-                    <div class="server-option">
-                        <label>
-                            <input type="radio" name="serverSelect" value="1">
-                            <span class="server-name">备用服务器</span>
-                            <input type="text" class="server-custom-host" id="customServerHost" placeholder="输入服务器地址">
-                        </label>
-                        <span class="server-status" id="serverStatus1">离线</span>
+                    
+                    <div class="lobby-container">
+                        <div class="lobby-panel create">
+                            <h3>创建房间</h3>
+                            <input type="text" class="room-code-input" id="roomNameInput" placeholder="输入房间名称，如：小明 VS 小红">
+                            <button class="lobby-btn create" id="createRoomBtn">创建房间</button>
+                            <div class="connection-status-display" id="createConnectionStatus">准备就绪</div>
+                        </div>
+                        
+                        <div class="lobby-panel join">
+                            <h3>加入房间</h3>
+                            <input type="text" class="room-code-input" id="roomCodeInput" placeholder="输入房间名称">
+                            <button class="lobby-btn join" id="joinRoomBtn">加入</button>
+                            <div class="connection-status-display" id="joinConnectionStatus">准备就绪</div>
+                        </div>
+                    </div>
+                    
+                    <button class="lobby-btn back" id="backToModeBtn">返回</button>
+                </div>
+                
+                <!-- 右侧：房间列表（默认隐藏） -->
+                <div class="lobby-right-panel" id="lobbyRightPanel">
+                    <!-- 房间列表 -->
+                    <div class="room-list-panel" id="roomListPanel" style="display:none;">
+                        <div class="room-list-header">
+                            <h3>房间列表</h3>
+                            <div style="display:flex; gap:10px;">
+                                <button class="refresh-btn" id="refreshRoomListBtn">🔄 刷新</button>
+                            </div>
+                        </div>
+                        <div class="room-list" id="roomList">
+                            <div class="no-rooms">暂无房间，创建一个吧！</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 房间列表不可用说明 -->
+                    <div class="room-list-unavailable-panel" id="roomListUnavailablePanel" style="display:block;">
+                        <h3>房间列表功能</h3>
+                        <div class="unavailable-message">
+                            <p>🔍 正在检测服务器...</p>
+                        </div>
                     </div>
                 </div>
-                <div class="server-actions">
-                    <button class="lobby-btn test" id="testServersBtn">测试服务器</button>
-                    <button class="lobby-btn settings" id="editServerBtn">编辑服务器</button>
-                </div>
-                <div class="connection-status-display" id="connectionStatusDisplay"></div>
             </div>
-            <div class="lobby-container">
-                <div class="lobby-panel create">
-                    <h3>创建房间</h3>
-                    <button class="lobby-btn create" id="createRoomBtn">创建房间</button>
-                </div>
-                <div class="lobby-panel join">
-                    <h3>加入房间</h3>
-                    <input type="text" class="room-code-input" id="roomCodeInput" placeholder="输入房间号">
-                    <button class="lobby-btn join" id="joinRoomBtn">加入</button>
-                </div>
-            </div>
-            <button class="lobby-btn back" id="backToModeBtn">返回</button>
         </div>
 
         <div class="waiting-room" id="waitingRoom">
             <h2 id="waitingTitle">等待玩家加入...</h2>
             <div class="room-code-container">
-                <div class="room-code-display" id="displayRoomCode">------</div>
-                <button class="copy-btn" id="copyBtn">📋 复制房间号</button>
+                <div class="room-name-display" id="displayRoomName">------</div>
+                <button class="copy-btn" id="copyBtn">📋 复制房间名称</button>
             </div>
-            <div class="hint-text" id="hintText">请将此房间号发送给对手</div>
+            <div class="hint-text" id="hintText">请将房间名称发送给对手</div>
             <div class="player-status" id="playerStatusDisplay">
                 <div class="player" id="p1StatusDisplay">
                     <span class="status-dot" id="p1Dot">○</span>
@@ -989,6 +1473,114 @@
             <button onclick="exportGameLog()" style="background: #666; margin-top: 15px;">导出日志</button>
         </div>
 
+        <!-- 暂停菜单 -->
+        <div class="pause-menu" id="pauseMenu">
+            <h2>游戏暂停</h2>
+            <button onclick="resumeGame()">继续游戏</button>
+            <button onclick="openSettings('keybinds')">键位设置</button>
+            <button onclick="openSettings('server')">服务器设置</button>
+            <button onclick="backToMenuFromPause()">返回主菜单</button>
+        </div>
+
+        <!-- 设置面板 -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-content">
+                <button class="settings-close" onclick="closeSettings()">✕</button>
+                <h2 id="settingsTitle">设置</h2>
+                
+                <!-- 键位设置 -->
+                <div id="keybindSettings">
+                    <h3>玩家 1 键位</h3>
+                    <div class="keybind-row">
+                        <span>左移</span>
+                        <button class="keybind-btn" data-key="p1-left" onclick="startKeybind('p1-left')">A</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>右移</span>
+                        <button class="keybind-btn" data-key="p1-right" onclick="startKeybind('p1-right')">D</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>跳跃</span>
+                        <button class="keybind-btn" data-key="p1-jump" onclick="startKeybind('p1-jump')">W</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>拳攻击</span>
+                        <button class="keybind-btn" data-key="p1-punch" onclick="startKeybind('p1-punch')">G</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>腿攻击</span>
+                        <button class="keybind-btn" data-key="p1-kick" onclick="startKeybind('p1-kick')">H</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>防御</span>
+                        <button class="keybind-btn" data-key="p1-block" onclick="startKeybind('p1-block')">J</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>气功弹</span>
+                        <button class="keybind-btn" data-key="p1-fireball" onclick="startKeybind('p1-fireball')">Y</button>
+                    </div>
+                    
+                    <h3 style="margin-top: 20px;">玩家 2 键位</h3>
+                    <div class="keybind-row">
+                        <span>左移</span>
+                        <button class="keybind-btn" data-key="p2-left" onclick="startKeybind('p2-left')">ArrowLeft</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>右移</span>
+                        <button class="keybind-btn" data-key="p2-right" onclick="startKeybind('p2-right')">ArrowRight</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>跳跃</span>
+                        <button class="keybind-btn" data-key="p2-jump" onclick="startKeybind('p2-jump')">ArrowUp</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>拳攻击</span>
+                        <button class="keybind-btn" data-key="p2-punch" onclick="startKeybind('p2-punch')">L</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>腿攻击</span>
+                        <button class="keybind-btn" data-key="p2-kick" onclick="startKeybind('p2-kick')">;</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>防御</span>
+                        <button class="keybind-btn" data-key="p2-block" onclick="startKeybind('p2-block')">"</button>
+                    </div>
+                    <div class="keybind-row">
+                        <span>气功弹</span>
+                        <button class="keybind-btn" data-key="p2-fireball" onclick="startKeybind('p2-fireball')">P</button>
+                    </div>
+                    
+                    <button class="settings-btn secondary" onclick="resetKeybinds()" style="margin-top: 15px;">恢复默认键位</button>
+                    <button class="settings-btn" onclick="saveKeybinds()">保存键位</button>
+                </div>
+
+                <!-- 服务器设置 -->
+                <div id="serverSettings">
+                    <h3>服务器配置</h3>
+                    <div class="server-row">
+                        <span>主服务器</span>
+                        <div class="server-inputs">
+                            <input type="text" id="server1-host" value="0.peerjs.com" placeholder="host">
+                            <input type="number" id="server1-port" value="443" placeholder="port">
+                            <input type="text" id="server1-path" value="/" placeholder="path">
+                            <label><input type="checkbox" id="server1-secure" checked> HTTPS</label>
+                        </div>
+                    </div>
+                    <div class="server-row">
+                        <span>备用服务器</span>
+                        <div class="server-inputs">
+                            <input type="text" id="server2-host" value="" placeholder="例如: your-server.com">
+                            <input type="number" id="server2-port" value="" placeholder="端口">
+                            <input type="text" id="server2-path" value="/" placeholder="路径">
+                            <label><input type="checkbox" id="server2-secure"> HTTPS</label>
+                        </div>
+                    </div>
+                    <button class="settings-btn secondary" onclick="resetServers()" style="margin-top: 15px;">恢复默认服务器</button>
+                    <button class="settings-btn" onclick="saveServers()">保存服务器配置</button>
+                </div>
+            </div>
+        </div>
+
         <div class="error-message" id="errorMessage"></div>
     </div>
 
@@ -1022,7 +1614,7 @@
         <div>接收: <span id="recvCount">0</span></div>
     </div>
 
-    <div class="sync-log-panel" id="syncLogPanel" style="position: fixed; bottom: 10px; left: 10px; right: 10px; height: 150px; background: rgba(0,0,0,0.85); border: 2px solid #0a0; padding: 8px; font-family: monospace; font-size: 11px; z-index: 1000;">
+    <div class="sync-log-panel" id="syncLogPanel" style="position: fixed; bottom: 10px; left: 10px; right: 10px; height: 150px; background: rgba(0,0,0,0.85); border: 2px solid #0a0; padding: 8px; font-family: monospace; font-size: 11px; z-index: 1000; display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
             <span style="color:#0f0;font-weight:bold;">📋 同步日志 [按 ` 隐藏]</span>
             <div>
@@ -1034,167 +1626,380 @@
     </div>
 
     <script>
+        // ============================================================
+        // 【暂停菜单和配置系统】
+        // ============================================================
+        let isPaused = false;
+        let currentKeybind = null;
+        
+        // 默认键位配置
+        const DEFAULT_KEYBINDS = {
+            'p1-left': 'KeyA', 'p1-right': 'KeyD', 'p1-jump': 'KeyW',
+            'p1-punch': 'KeyG', 'p1-kick': 'KeyH', 'p1-block': 'KeyJ', 'p1-fireball': 'KeyY',
+            'p2-left': 'ArrowLeft', 'p2-right': 'ArrowRight', 'p2-jump': 'ArrowUp',
+            'p2-punch': 'KeyL', 'p2-kick': 'Semicolon', 'p2-block': 'Quote', 'p2-fireball': 'KeyP'
+        };
+        
+        // 当前键位配置（从 localStorage 加载或默认）
+        let keybinds = JSON.parse(localStorage.getItem('mechaFight_keybinds') || JSON.stringify(DEFAULT_KEYBINDS));
+        
+        // 默认服务器配置
+        const DEFAULT_SERVERS = [
+            { host: '0.peerjs.com', port: 443, path: '/', secure: true },
+            { host: '', port: 0, path: '/', secure: false }
+        ];
+        
+        // 当前服务器配置（从 localStorage 加载或默认）
+        let serverConfigs = JSON.parse(localStorage.getItem('mechaFight_servers') || JSON.stringify(DEFAULT_SERVERS));
+        
+        // 暂停/继续游戏
+        function togglePause() {
+            if (gameMode === 'none') return; // 不在游戏中，不处理
+            isPaused = !isPaused;
+            const pauseMenu = document.getElementById('pauseMenu');
+            if (isPaused) {
+                pauseMenu.classList.add('show');
+                debugLog('游戏已暂停');
+            } else {
+                pauseMenu.classList.remove('show');
+                debugLog('游戏继续');
+            }
+        }
+        
+        // 从暂停菜单继续游戏
+        function resumeGame() {
+            isPaused = false;
+            document.getElementById('pauseMenu').classList.remove('show');
+        }
+        
+        // 从暂停菜单返回主菜单
+        function backToMenuFromPause() {
+            isPaused = false;
+            document.getElementById('pauseMenu').classList.remove('show');
+            backToMenu();
+        }
+        
+        // 打开设置面板
+        function openSettings(type) {
+            const panel = document.getElementById('settingsPanel');
+            const title = document.getElementById('settingsTitle');
+            const keybindSettings = document.getElementById('keybindSettings');
+            const serverSettings = document.getElementById('serverSettings');
+            
+            if (type === 'keybinds') {
+                title.textContent = '键位设置';
+                keybindSettings.style.display = 'block';
+                serverSettings.style.display = 'none';
+                updateKeybindUI();
+            } else {
+                title.textContent = '服务器设置';
+                keybindSettings.style.display = 'none';
+                serverSettings.style.display = 'block';
+                updateServerUI();
+            }
+            
+            panel.classList.add('show');
+        }
+        
+        // 关闭设置面板
+        function closeSettings() {
+            document.getElementById('settingsPanel').classList.remove('show');
+            if (currentKeybind) {
+                currentKeybind = null;
+                document.querySelectorAll('.keybind-btn').forEach(btn => btn.classList.remove('recording'));
+            }
+        }
+        
+        // ============== 键位设置相关 ==============
+        function updateKeybindUI() {
+            Object.keys(keybinds).forEach(key => {
+                const btn = document.querySelector(`.keybind-btn[data-key="${key}"]`);
+                if (btn) {
+                    btn.textContent = keybinds[key].replace('Key', '').replace('Arrow', '');
+                }
+            });
+        }
+        
+        function startKeybind(key) {
+            // 清除之前的录制状态
+            document.querySelectorAll('.keybind-btn').forEach(btn => btn.classList.remove('recording'));
+            
+            currentKeybind = key;
+            const btn = document.querySelector(`.keybind-btn[data-key="${key}"]`);
+            if (btn) {
+                btn.classList.add('recording');
+                btn.textContent = '请按键...';
+            }
+        }
+        
+        function recordKey(event) {
+            if (!currentKeybind) return;
+            
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const keyCode = event.code;
+            
+            // 更新键位
+            keybinds[currentKeybind] = keyCode;
+            
+            // 更新 UI
+            const btn = document.querySelector(`.keybind-btn[data-key="${currentKeybind}"]`);
+            if (btn) {
+                btn.classList.remove('recording');
+                btn.textContent = keyCode.replace('Key', '').replace('Arrow', '');
+            }
+            
+            currentKeybind = null;
+            debugLog(`键位已设置: ${keyCode}`);
+        }
+        
+        function saveKeybinds() {
+            localStorage.setItem('mechaFight_keybinds', JSON.stringify(keybinds));
+            showError('键位已保存!', false);
+            debugLog('键位已保存到本地');
+        }
+        
+        function resetKeybinds() {
+            keybinds = JSON.parse(JSON.stringify(DEFAULT_KEYBINDS));
+            updateKeybindUI();
+            debugLog('键位已恢复默认');
+        }
+        
+        // ============== 服务器设置相关 ==============
+        function updateServerUI() {
+            if (serverConfigs[0]) {
+                document.getElementById('server1-host').value = serverConfigs[0].host;
+                document.getElementById('server1-port').value = serverConfigs[0].port;
+                document.getElementById('server1-path').value = serverConfigs[0].path;
+                document.getElementById('server1-secure').checked = serverConfigs[0].secure;
+            }
+            if (serverConfigs[1]) {
+                document.getElementById('server2-host').value = serverConfigs[1].host;
+                document.getElementById('server2-port').value = serverConfigs[1].port;
+                document.getElementById('server2-path').value = serverConfigs[1].path;
+                document.getElementById('server2-secure').checked = serverConfigs[1].secure;
+            }
+        }
+        
+        function saveServers() {
+            serverConfigs[0] = {
+                host: document.getElementById('server1-host').value,
+                port: parseInt(document.getElementById('server1-port').value),
+                path: document.getElementById('server1-path').value,
+                secure: document.getElementById('server1-secure').checked
+            };
+            serverConfigs[1] = {
+                host: document.getElementById('server2-host').value,
+                port: parseInt(document.getElementById('server2-port').value),
+                path: document.getElementById('server2-path').value,
+                secure: document.getElementById('server2-secure').checked
+            };
+            
+            localStorage.setItem('mechaFight_servers', JSON.stringify(serverConfigs));
+            
+            // 更新游戏中的服务器配置
+            if (typeof PEER_SERVERS !== 'undefined') {
+                PEER_SERVERS[0] = serverConfigs[0];
+                PEER_SERVERS[1] = serverConfigs[1];
+            }
+            
+            // 更新服务器选择UI
+            updateServerSelectUI();
+            
+            showError('服务器配置已保存!', false);
+            debugLog('服务器配置已保存到本地');
+            
+            // 关闭设置面板，回到上级界面
+            closeSettings();
+        }
+        
+        function resetServers() {
+            serverConfigs = JSON.parse(JSON.stringify(DEFAULT_SERVERS));
+            updateServerUI();
+            updateServerSelectUI();
+            debugLog('服务器配置已恢复默认');
+        }
+
+        // 服务器选择UI更新
+        function updateServerSelectUI() {
+            for (let i = 0; i < serverConfigs.length; i++) {
+                const server = serverConfigs[i];
+                const detailEl = document.getElementById(`server${i}Detail`);
+                if (detailEl) {
+                    detailEl.textContent = `${server.host}:${server.port}`;
+                }
+            }
+        }
+
+        // 获取当前选中的服务器索引
+        function getSelectedServerIndex() {
+            const radios = document.querySelectorAll('input[name="server"]');
+            for (let i = 0; i < radios.length; i++) {
+                if (radios[i].checked) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        // 设置服务器状态显示
+        function setServerStatus(index, status, text) {
+            const statusEl = document.getElementById(`server${index}Status`);
+            if (statusEl) {
+                statusEl.textContent = text;
+                statusEl.className = 'server-status';
+                if (status === 'testing') {
+                    statusEl.classList.add('testing');
+                } else if (status === 'online') {
+                    statusEl.classList.add('online');
+                } else if (status === 'offline') {
+                    statusEl.classList.add('offline');
+                }
+            }
+        }
+
+        // 测试单个服务器
+        async function testSingleServer(index) {
+            const server = serverConfigs[index];
+            
+            // 如果服务器未配置，跳过测试
+            if (!server || !server.host || server.host.trim() === '' || server.port === 0) {
+                setServerStatus(index, 'offline', '未配置');
+                return false;
+            }
+            
+            setServerStatus(index, 'testing', '测试中...');
+            
+            const startTime = Date.now();
+            
+            try {
+                // 使用简单的时间戳测试代替实际连接
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // 尝试创建一个临时的Peer连接来测试
+                const testPeer = new Peer(undefined, {
+                    host: server.host,
+                    port: server.port,
+                    path: server.path,
+                    secure: server.secure,
+                    debug: 0
+                });
+                
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('连接超时')), 5000);
+                    
+                    testPeer.on('open', () => {
+                        clearTimeout(timeout);
+                        testPeer.destroy();
+                        resolve();
+                    });
+                    
+                    testPeer.on('error', (err) => {
+                        clearTimeout(timeout);
+                        testPeer.destroy();
+                        reject(err);
+                    });
+                });
+                
+                const latency = Date.now() - startTime;
+                setServerStatus(index, 'online', `${latency}ms`);
+                return true;
+            } catch (err) {
+                debugLog(`服务器测试失败 (${server.host}): ${err}`);
+                setServerStatus(index, 'offline', '离线');
+                return false;
+            }
+        }
+
+        // 测试所有服务器
+        async function testAllServers() {
+            const results = [];
+            for (let i = 0; i < serverConfigs.length; i++) {
+                const result = await testSingleServer(i);
+                results.push(result);
+            }
+            return results;
+        }
+
+        // 切换到指定服务器并重连
+        async function switchToServer(serverIndex, isCreatingRoom = true) {
+            // 设置当前服务器索引
+            currentServerIndex = serverIndex;
+            
+            // 更新状态显示
+            const statusEl = isCreatingRoom 
+                ? document.getElementById('createConnectionStatus') 
+                : document.getElementById('joinConnectionStatus');
+            if (statusEl) {
+                statusEl.className = 'connection-status-display connecting';
+                statusEl.textContent = `正在连接到 ${serverConfigs[serverIndex].host}...`;
+            }
+            
+            debugLog(`切换到服务器 ${serverIndex}: ${serverConfigs[serverIndex].host}`);
+        }
+
+        // 更新连接状态显示
+        function updateConnectionStatus(isCreating, status, message) {
+            const statusEl = isCreating 
+                ? document.getElementById('createConnectionStatus') 
+                : document.getElementById('joinConnectionStatus');
+            if (statusEl) {
+                statusEl.className = 'connection-status-display';
+                if (status === 'connecting') {
+                    statusEl.classList.add('connecting');
+                } else if (status === 'connected') {
+                    statusEl.classList.add('connected');
+                } else if (status === 'error') {
+                    statusEl.classList.add('error');
+                }
+                statusEl.textContent = message;
+            }
+        }
+        
+        // ============================================================
+        // 【游戏主逻辑】
+        // ============================================================
         const GAME_VERSION = 'v2.0.1';
         document.title = `像素风机甲游戏 ${GAME_VERSION}`;
         document.getElementById('gameTitle').textContent = `像素风机甲对战 ${GAME_VERSION}`;
-
-        const DEFAULT_SERVERS = [
-            { host: '0.peerjs.com', port: 9000, path: '/', secure: true },
-            { host: '', port: 9000, path: '/', secure: false }
-        ];
-
-        const serverHosts = ['0.peerjs.com', ''];
-
-        function getServerConfig() {
-            const selectedIndex = getSelectedServerIndex();
-            if (selectedIndex === 0) {
-                return { host: '0.peerjs.com', port: 9000, path: '/', secure: true };
-            } else {
-                const customHost = document.getElementById('customServerHost').value.trim();
-                if (customHost) {
-                    const isSecure = customHost.startsWith('https://');
-                    const hostOnly = customHost.replace(/^https?:\/\//, '');
-                    return { host: hostOnly, port: 9000, path: '/', secure: isSecure || customHost.startsWith('https') };
-                }
-                return null;
-            }
-        }
-
-        function updateServerSelectUI() {
-            const selectedIndex = getSelectedServerIndex();
-            const radios = document.querySelectorAll('input[name="serverSelect"]');
-            radios.forEach((radio, index) => {
-                radio.checked = (index === selectedIndex);
-            });
-            const customInput = document.getElementById('customServerHost');
-            if (selectedIndex === 1) {
-                customInput.disabled = false;
-            } else {
-                customInput.disabled = true;
-            }
-        }
-
-        function getSelectedServerIndex() {
-            const selected = document.querySelector('input[name="serverSelect"]:checked');
-            return selected ? parseInt(selected.value) : 0;
-        }
-
-        function setServerStatus(index, status, text) {
-            const statusEl = document.getElementById('serverStatus' + index);
-            if (statusEl) {
-                statusEl.className = 'server-status ' + status;
-                statusEl.textContent = text;
-            }
-        }
-
-        async function testSingleServer(index) {
-            const testPeerId = 'test-' + Math.random().toString(36).substring(2, 8);
-            setServerStatus(index, 'testing', '测试中');
-
-            const testConfig = index === 0
-                ? { host: '0.peerjs.com', port: 9000, path: '/', secure: true }
-                : { host: document.getElementById('customServerHost').value.trim(), port: 9000, path: '/', secure: false };
-
-            if (index === 1 && !testConfig.host) {
-                setServerStatus(1, 'offline', '未配置');
-                return false;
-            }
-
-            return new Promise((resolve) => {
-                const testPeer = new Peer(testPeerId, {
-                    host: testConfig.host,
-                    port: testConfig.port,
-                    path: testConfig.path,
-                    secure: testConfig.secure,
-                    timeout: 5000
-                });
-
-                const timer = setTimeout(() => {
-                    testPeer.destroy();
-                    setServerStatus(index, 'offline', '超时');
-                    resolve(false);
-                }, 5000);
-
-                testPeer.on('open', () => {
-                    clearTimeout(timer);
-                    testPeer.destroy();
-                    setServerStatus(index, 'online', '在线');
-                    resolve(true);
-                });
-
-                testPeer.on('error', (err) => {
-                    clearTimeout(timer);
-                    testPeer.destroy();
-                    if (err.type === 'network' || err.type === 'server-error') {
-                        setServerStatus(index, 'offline', '离线');
-                    } else if (err.type === 'unavailable-id') {
-                        setServerStatus(index, 'online', '在线');
-                        resolve(true);
-                    } else {
-                        setServerStatus(index, 'offline', '离线');
-                    }
-                    resolve(false);
-                });
-            });
-        }
-
-        async function testAllServers() {
-            updateConnectionStatus(true, 'connecting', '正在测试服务器...');
-            const btn = document.getElementById('testServersBtn');
-            btn.disabled = true;
-            btn.textContent = '测试中...';
-
-            setServerStatus(0, 'testing', '测试中');
-            setServerStatus(1, 'testing', '测试中');
-
-            const result0 = await testSingleServer(0);
-            const result1 = await testSingleServer(1);
-
-            btn.disabled = false;
-            btn.textContent = '测试服务器';
-
-            const onlineCount = [result0, result1].filter(r => r).length;
-            if (onlineCount > 0) {
-                updateConnectionStatus(false, 'success', `测试完成: ${onlineCount} 个服务器可用`);
-            } else {
-                updateConnectionStatus(false, 'error', '所有服务器均不可用');
-            }
-        }
-
-        function updateConnectionStatus(isCreating, status, message) {
-            const display = document.getElementById('connectionStatusDisplay');
-            if (display) {
-                display.textContent = message;
-                display.className = 'connection-status-display ' + status;
-            }
-        }
-
-        function openSettings(type) {
-            if (type === 'server') {
-                const selectedIndex = getSelectedServerIndex();
-                if (selectedIndex === 1) {
-                    const customInput = document.getElementById('customServerHost');
-                    customInput.focus();
-                    customInput.select();
-                } else {
-                    document.querySelector('input[name="serverSelect"][value="1"]').checked = true;
-                    updateServerSelectUI();
-                    setTimeout(() => {
-                        const customInput = document.getElementById('customServerHost');
-                        customInput.focus();
-                        customInput.select();
-                    }, 100);
-                }
-            }
-        }
-
+        
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const gameContainer = document.querySelector('.game-container');
 
         const CANVAS_WIDTH = 800;
         const CANVAS_HEIGHT = 600;
         const GRAVITY = 0.5;
         const GROUND_Y = CANVAS_HEIGHT - 128 - 30;
+        
+        let scale = 1;
+        
+        function resizeCanvas() {
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            
+            const padding = 20;
+            const availableWidth = windowWidth - padding * 2;
+            const availableHeight = windowHeight - padding * 2 - 60; // 减去标题高度
+            
+            const scaleX = availableWidth / CANVAS_WIDTH;
+            const scaleY = availableHeight / CANVAS_HEIGHT;
+            
+            // 不超过原始尺寸，也不小于最小尺寸
+            scale = Math.min(scaleX, scaleY);
+            scale = Math.min(scale, 1.5);
+            scale = Math.max(scale, 0.5);
+            
+            canvas.style.width = `${CANVAS_WIDTH * scale}px`;
+            canvas.style.height = `${CANVAS_HEIGHT * scale}px`;
+            
+            gameContainer.style.width = `${CANVAS_WIDTH * scale}px`;
+            gameContainer.style.height = `${CANVAS_HEIGHT * scale}px`;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
         
         // ============================================================
         // 【配置文件区域】新增角色/技能只需修改以下配置，无需改动逻辑代码
@@ -1444,17 +2249,153 @@
 
         function showOnlineLobby() {
             document.getElementById('modeSelect').style.display = 'none';
-            document.getElementById('onlineLobby').classList.add('show');
+            document.getElementById('titleScreen').classList.remove('show');
             document.getElementById('waitingRoom').classList.remove('show');
-            updateServerSelectUI();
+            document.getElementById('gameOver').classList.remove('show');
+            document.getElementById('uiOverlay').classList.remove('show');
+            document.getElementById('gameControls').classList.remove('show');
+            document.getElementById('onlineLobby').classList.add('show');
+            
+            // 默认显示不可用面板，隐藏房间列表
+            document.getElementById('roomListPanel').style.display = 'none';
+            document.getElementById('roomListUnavailablePanel').style.display = 'flex';
+            document.querySelector('.unavailable-message').innerHTML = '<p>🔍 正在检测服务器...</p>';
+            
+            // 重置房间列表功能标志
+            roomDiscoveryEnabled = false;
+            
+            // 检测服务器是否支持 listAllPeers
+            testServerDiscovery();
+            
             debugLog('已进入联机大厅');
         }
+        
+        // 测试服务器是否支持 listAllPeers
+        let testPeer = null;
+        let testPeerIgnoreErrors = false;
+        function testServerDiscovery() {
+            const selectedIndex = getSelectedServerIndex();
+            const server = PEER_SERVERS[selectedIndex];
+            
+            debugLog(`正在测试服务器: ${server.host}:${server.port}`);
+            
+            // 创建一个临时 Peer 来测试
+            const testId = 'mf_test_' + Math.random().toString(36).substring(2, 7);
+            
+            try {
+                testPeer = new Peer(testId, {
+                    host: server.host,
+                    port: server.port,
+                    path: server.path,
+                    secure: server.secure,
+                    debug: 0
+                });
+                
+                testPeer.on('open', (id) => {
+                    debugLog('测试Peer连接成功，尝试 listAllPeers...');
+                    
+                    // 尝试调用 listAllPeers
+                    if (testPeer.listAllPeers) {
+                        testPeer.listAllPeers((peers) => {
+                            debugLog('服务器支持 listAllPeers！');
+                            // 显示房间列表
+                            showRoomListPanel();
+                            // 启用房间列表功能
+                            roomDiscoveryEnabled = true;
+                            // 初始化真正的房间发现
+                            refreshRoomList();
+                            startRoomDiscovery();
+                            // 清理测试 Peer
+                            cleanupTestPeer();
+                        }, (err) => {
+                            debugLog('listAllPeers 调用失败: ' + (err.message || err));
+                            // listAllPeers 失败，设置标志忽略后续的 server-error
+                            testPeerIgnoreErrors = true;
+                            showRoomListUnavailablePanel();
+                            cleanupTestPeer();
+                        });
+                    } else {
+                        debugLog('listAllPeers 方法不可用');
+                        showRoomListUnavailablePanel();
+                        cleanupTestPeer();
+                    }
+                });
+                
+                testPeer.on('error', (err) => {
+                    // 如果设置了忽略错误标志，说明是 listAllPeers 导致的错误，忽略它
+                    if (testPeerIgnoreErrors) {
+                        return;
+                    }
+                    
+                    // 如果是服务器错误，很可能是 listAllPeers 失败导致的
+                    if (err.type === 'server-error') {
+                        debugLog('服务器返回错误，可能是 listAllPeers 不支持');
+                        showRoomListUnavailablePanel();
+                        cleanupTestPeer();
+                        return;
+                    }
+                    
+                    debugLog('测试Peer连接错误: ' + (err.type || err.message || err));
+                    showRoomListUnavailablePanel();
+                    cleanupTestPeer();
+                });
+                
+                // 超时处理
+                setTimeout(() => {
+                    if (testPeer) {
+                        debugLog('服务器检测超时');
+                        showRoomListUnavailablePanel();
+                        cleanupTestPeer();
+                    }
+                }, 5000);
+                
+            } catch (e) {
+                debugLog('创建测试Peer失败: ' + e);
+                showRoomListUnavailablePanel();
+            }
+        }
+        
+        function cleanupTestPeer() {
+            if (testPeer) {
+                testPeerIgnoreErrors = false;
+                try {
+                    testPeer.destroy();
+                } catch (e) {
+                    // 忽略销毁错误
+                }
+                testPeer = null;
+            }
+        }
+        
+        function showRoomListPanel() {
+            document.getElementById('roomListPanel').style.display = 'flex';
+            document.getElementById('roomListUnavailablePanel').style.display = 'none';
+        }
+        
+        function showRoomListUnavailablePanel() {
+            document.getElementById('roomListPanel').style.display = 'none';
+            document.getElementById('roomListUnavailablePanel').style.display = 'flex';
+            
+            const selectedIndex = getSelectedServerIndex();
+            const server = PEER_SERVERS[selectedIndex];
+            
+            document.querySelector('.unavailable-message').innerHTML = `
+                <p class="warning">❌ 当前服务器不支持房间列表功能</p>
+                <p class="info">💡 原因：公共服务器为保护隐私通常禁用此功能</p>
+                <p>📋 仍然可以通过以下方式联机：</p>
+                <p>1. 创建房间并分享房间名称</p>
+                <p>2. 输入房间名称直接加入</p>
+                <p class="info">🔧 如需房间列表，请使用自建服务器并启用 allow_discovery 选项</p>
+            `;
+        }
 
-        function showWaitingRoom(peerId) {
-            currentPeerId = peerId;
+        function showWaitingRoom(roomName) {
+            // 保存房间名称
+            currentRoomName = roomName;
+            
             document.getElementById('onlineLobby').classList.remove('show');
             document.getElementById('waitingRoom').classList.add('show');
-            document.getElementById('displayRoomCode').textContent = peerId;
+            document.getElementById('displayRoomName').textContent = roomName;
             
             if (isHost) {
                 document.getElementById('p1Dot').textContent = '●';
@@ -1469,7 +2410,7 @@
                 document.getElementById('p2Dot').classList.remove('connected');
                 document.getElementById('p2Dot').classList.add('waiting');
                 
-                document.getElementById('hintText').textContent = '请将此房间号发送给对手，等待对方加入';
+                document.getElementById('hintText').textContent = '请将此房间名称发送给对手，等待对方加入';
                 document.getElementById('hintText').classList.remove('waiting');
                 document.getElementById('waitingTitle').textContent = '等待玩家加入...';
                 document.getElementById('startGameBtn').disabled = true;
@@ -1496,7 +2437,7 @@
                 document.getElementById('startGameBtn').classList.add('waiting');
             }
             
-            debugLog(`房间号: ${peerId}`);
+            debugLog(`房间名称: ${roomName}`);
         }
 
         function showTitleScreen() {
@@ -1539,6 +2480,12 @@
         }
 
         function backToMenu() {
+            // 如果是房主且有房间名称，移除房间
+            if (isHost && currentRoomName) {
+                debugLog(`房主退出，移除房间: ${currentRoomName}`);
+                removeRoomFromList(currentRoomName);
+            }
+            
             if (connection) {
                 debugLog('关闭连接...');
                 connection.close();
@@ -1550,7 +2497,17 @@
             }
             peer = null;
             currentPeerId = null;
+            currentServerIndex = 0;
             gameMode = 'none';
+            currentRoomName = '';
+            isHost = false;
+            
+            // 清理房间发现
+            if (roomDiscoveryInterval) {
+                clearInterval(roomDiscoveryInterval);
+                roomDiscoveryInterval = null;
+            }
+            
             showModeSelect();
             stopAllMusic();
             debugLog('已返回主菜单');
@@ -1564,42 +2521,349 @@
             setTimeout(() => errEl.classList.remove('show'), 5000);
         }
 
-        function copyRoomCode() {
-            if (!currentPeerId) return;
-            navigator.clipboard.writeText(currentPeerId).then(() => {
+        // 生成随机房间名称
+        function generateRandomRoomName() {
+            const adjectives = ['热血', '极速', '雷霆', '风暴', '烈焰', '冰霜', '暗影', '光明', '神秘', '无敌'];
+            const nouns = ['战士', '勇士', '斗士', '战神', '王者', '霸主', '英雄', '宗师', '大师', '传奇'];
+            const numbers = ['001', '007', '088', '666', '888', '999'];
+            
+            const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+            const noun = nouns[Math.floor(Math.random() * nouns.length)];
+            const num = numbers[Math.floor(Math.random() * numbers.length)];
+            
+            return `${adj}${noun}${num}`;
+        }
+
+        function copyRoomName() {
+            if (!currentRoomName) return;
+            navigator.clipboard.writeText(currentRoomName).then(() => {
                 const btn = document.getElementById('copyBtn');
-                btn.textContent = '✓ 已复制!';
-                btn.classList.add('copied');
-                debugLog('房间号已复制到剪贴板');
-                setTimeout(() => {
-                    btn.textContent = '📋 复制房间号';
-                    btn.classList.remove('copied');
-                }, 2000);
+                if (btn) {
+                    btn.textContent = '✓ 已复制!';
+                    btn.classList.add('copied');
+                    debugLog('房间名称已复制到剪贴板');
+                    setTimeout(() => {
+                        btn.textContent = '📋 复制房间名称';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                }
             }).catch(err => {
                 debugLog(`复制失败: ${err}`);
                 showError('复制失败，请手动复制');
             });
         }
 
-        function initPeer() {
-            const randomId = 'mf' + Math.random().toString(36).substring(2, 10);
-            debugLog(`正在初始化Peer，ID: ${randomId}...`);
-            updateConnectionStatus(true, 'connecting', `正在连接服务器...`);
-
-            const serverConfig = getServerConfig();
-            if (!serverConfig) {
-                showError('请先选择并配置服务器');
-                updateConnectionStatus(false, 'error', '服务器未配置');
+        // 使用加载的服务器配置
+        let PEER_SERVERS = serverConfigs;
+        let currentServerIndex = 0;
+        let currentRoomName = '';  // 当前房间名称
+        
+        // 房间列表相关
+        let roomList = [];
+        let roomDiscoveryInterval = null;
+        let discoveredRooms = {};
+        let roomDiscoveryEnabled = false; // 房间列表功能是否启用
+        
+        // 获取房间列表
+        let refreshRoomListPeer = null;
+        function refreshRoomList() {
+            // 只有当房间列表功能启用时才刷新
+            if (!roomDiscoveryEnabled) {
                 return;
             }
+            
+            // 如果已经有临时peer在使用了，跳过这次刷新
+            if (refreshRoomListPeer) {
+                return;
+            }
+            
+            // 获取配置好的服务器
+            const selectedIndex = getSelectedServerIndex();
+            const server = PEER_SERVERS[selectedIndex];
+            
+            // 如果已有peer，直接用；否则创建临时peer用于获取列表
+            if (peer && peer.listAllPeers) {
+                peer.listAllPeers((peers) => {
+                    processPeerList(peers);
+                }, (err) => {
+                    debugLog('listAllPeers 调用失败：' + (err.message || err));
+                });
+            } else {
+                // 创建临时peer来获取房间列表，注意ID不能以mf开头！
+                const tempId = 'ref_' + Math.random().toString(36).substring(2, 6);
+                try {
+                    refreshRoomListPeer = new Peer(tempId, {
+                        host: server.host,
+                        port: server.port,
+                        path: server.path,
+                        secure: server.secure,
+                        debug: 0
+                    });
+                    
+                    refreshRoomListPeer.on('open', (id) => {
+                        refreshRoomListPeer.listAllPeers((peers) => {
+                            processPeerList(peers);
+                            // 获取完列表后销毁临时peer
+                            setTimeout(() => {
+                                if (refreshRoomListPeer) {
+                                    refreshRoomListPeer.destroy();
+                                    refreshRoomListPeer = null;
+                                }
+                            }, 500);
+                        }, (err) => {
+                            debugLog('listAllPeers 调用失败：' + (err.message || err));
+                            if (refreshRoomListPeer) {
+                                refreshRoomListPeer.destroy();
+                                refreshRoomListPeer = null;
+                            }
+                        });
+                    });
+                    
+                    refreshRoomListPeer.on('error', (err) => {
+                        debugLog('刷新临时peer错误：' + (err.message || err));
+                        if (refreshRoomListPeer) {
+                            refreshRoomListPeer.destroy();
+                            refreshRoomListPeer = null;
+                        }
+                    });
+                } catch (e) {
+                    debugLog('刷新列表时创建peer错误：' + e);
+                }
+            }
+            
+            function processPeerList(peers) {
+                if (peers && Array.isArray(peers)) {
+                    const gameRooms = peers.filter(id => id.startsWith('mf'));
+                    roomList = gameRooms.map(peerId => ({
+                        peerId: peerId,
+                        name: decodePeerId(peerId),
+                        players: 1,
+                        createdAt: Date.now(),
+                        lastSeen: Date.now()
+                    }));
+                }
+                renderRoomList();
+            }
+        }
+        
+        // 开始房间发现
+        function startRoomDiscovery() {
+            if (roomDiscoveryInterval) {
+                clearInterval(roomDiscoveryInterval);
+            }
+            
+            // 只有当房间列表功能启用时才启动定时刷新
+            if (!roomDiscoveryEnabled) {
+                return;
+            }
+            
+            // 每60秒刷新一次房间列表
+            roomDiscoveryInterval = setInterval(() => {
+                refreshRoomList();
+            }, 60000);
+        }
+        
+        // 停止房间发现
+        function stopRoomDiscovery() {
+            if (roomDiscoveryInterval) {
+                clearInterval(roomDiscoveryInterval);
+                roomDiscoveryInterval = null;
+            }
+            if (testPeer) {
+                cleanupTestPeer();
+            }
+        }
+        
+        // 渲染房间列表
+        function renderRoomList() {
+            const roomListEl = document.getElementById('roomList');
+            
+            if (roomList.length === 0) {
+                roomListEl.innerHTML = '<div class="no-rooms">暂无房间，创建一个吧！</div>';
+                return;
+            }
+            
+            let html = '';
+            for (const room of roomList) {
+                html += `
+                    <div class="room-item">
+                        <div class="room-name">${escapeHtml(room.name)}</div>
+                        <div class="room-status ${room.players === 1 ? 'waiting' : 'full'}">
+                            ${room.players === 1 ? '等待中' : '已满'}
+                        </div>
+                        <button class="join-room-btn" onclick="joinRoomFromList('${escapeHtml(room.peerId)}')">加入</button>
+                    </div>
+                `;
+            }
+            
+            roomListEl.innerHTML = html;
+        }
+        
+        // 从列表加入房间
+        function joinRoomFromList(peerId) {
+            document.getElementById('roomCodeInput').value = decodePeerId(peerId);
+            connectToPeerById(peerId);
+        }
+        
+        // 通过 peer ID 直接连接（不需要再次转换）
+        function connectToPeerById(targetPeerId) {
+            // 从 peer ID 解码原始房间名
+            currentRoomName = decodePeerId(targetPeerId);
+            
+            // 使用用户选择的服务器
+            const selectedIndex = getSelectedServerIndex();
+            currentServerIndex = selectedIndex;
+            const server = PEER_SERVERS[currentServerIndex];
+            
+            debugLog(`正在连接到房间: ${targetPeerId}，服务器: ${server.host}:${server.port}...`);
+            
+            if (currentServerIndex > 0) {
+                debugLog(`⚠️ 使用备用服务器: ${server.host}:${server.port}`);
+            }
+            
+            // 更新连接状态
+            updateConnectionStatus(false, 'connecting', `正在连接到 ${server.host}...`);
+            
+            if (peer) {
+                peer.destroy();
+            }
+            
+            // 创建新的 peer 用于连接
+            const myPeerId = 'mf_' + Math.random().toString(36).substring(2, 6);
+            peer = new Peer(myPeerId, {
+                host: server.host,
+                port: server.port,
+                path: server.path,
+                secure: server.secure,
+                debug: 2,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
+                    ]
+                }
+            });
+            
+            peer.on('open', (id) => {
+                debugLog(`连接成功! 正在连接至房间: ${targetPeerId}...`);
+                currentPeerId = id;
+                isHost = false;
+                myPlayerId = 2;
+                
+                // 连接到房主的 peer
+                const conn = peer.connect(targetPeerId, {
+                    reliable: true
+                });
+                
+                // 显示等待界面
+                showWaitingRoom(currentRoomName);
+                
+                // 设置为全局连接变量
+                connection = conn;
+                
+                // 设置连接回调
+                setupConnection();
+            });
+            
+            peer.on('error', (err) => {
+                handlePeerError(err, '加入房间');
+            });
+        }
+        
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 添加房间到列表
+        function addRoomToList(roomName) {
+            const peerId = generatePeerId(roomName);
+            const existingRoom = roomList.find(r => r.peerId === peerId);
+            if (!existingRoom) {
+                roomList.push({
+                    peerId: peerId,
+                    name: roomName,
+                    players: 1,
+                    createdAt: Date.now(),
+                    lastSeen: Date.now()
+                });
+            }
+            renderRoomList();
+        }
+        
+        // 从列表移除房间（通过 peerId 或 name 查找）
+        function removeRoomFromList(roomName) {
+            const peerId = roomName.startsWith('mf') ? roomName : generatePeerId(roomName);
+            roomList = roomList.filter(r => r.peerId !== peerId);
+            renderRoomList();
+        }
+        
+        // 更新房间玩家数
+        function updateRoomPlayerCount(roomName, playerCount) {
+            const peerId = roomName.startsWith('mf') ? roomName : generatePeerId(roomName);
+            const room = roomList.find(r => r.peerId === peerId);
+            if (room) {
+                room.players = playerCount;
+                if (playerCount >= 2) {
+                    // 房间已满，从列表移除
+                    removeRoomFromList(roomName);
+                }
+                renderRoomList();
+            }
+        }
+        
+        // Base64 编解码中文房间名
+        function encodeRoomName(name) {
+            return btoa(encodeURIComponent(name));
+        }
+        function decodeRoomName(encoded) {
+            return decodeURIComponent(atob(encoded));
+        }
+        
+        // 生成有效的 Peer ID（用 Base64 编码中文）
+        function generatePeerId(roomName) {
+            return 'mf' + encodeRoomName(roomName);
+        }
+        
+        // 从 Peer ID 解码回原始房间名
+        function decodePeerId(peerId) {
+            if (!peerId || !peerId.startsWith('mf')) return peerId;
+            const encoded = peerId.substring(2);
+            try {
+                return decodeRoomName(encoded);
+            } catch (e) {
+                return peerId;
+            }
+        }
 
-            debugLog(`使用服务器: ${serverConfig.host}`);
+        function initPeer(roomName) {
+            // 保存房间名称
+            currentRoomName = roomName;
+            
+            // 使用用户选择的服务器
+            const selectedIndex = getSelectedServerIndex();
+            currentServerIndex = selectedIndex;
+            
+            // 将房间名称转换为有效的Peer ID
+            const peerId = generatePeerId(roomName);
+            const server = PEER_SERVERS[currentServerIndex];
+            debugLog(`正在初始化Peer，房间名称: ${roomName}，ID: ${peerId}，服务器: ${server.host}:${server.port}...`);
 
-            peer = new Peer(randomId, {
-                host: serverConfig.host,
-                port: serverConfig.port,
-                path: serverConfig.path,
-                secure: serverConfig.secure,
+            if (currentServerIndex > 0) {
+                debugLog(`⚠️ 使用备用服务器: ${server.host}:${server.port}`);
+            }
+            
+            // 更新连接状态
+            updateConnectionStatus(true, 'connecting', `正在连接到 ${server.host}...`);
+
+            peer = new Peer(peerId, {
+                host: server.host,
+                port: server.port,
+                path: server.path,
+                secure: server.secure,
                 debug: 2,
                 config: {
                     iceServers: [
@@ -1618,11 +2882,17 @@
                 currentPeerId = id;
                 isHost = true;
                 myPlayerId = 1;
-                showWaitingRoom(id);
+                showWaitingRoom(roomName);  // 显示房间名称
                 document.getElementById('connectionStatus').textContent = '房间已创建';
                 document.getElementById('connectionStatus').className = 'connection-status connected';
-                updateConnectionStatus(false, 'success', `已连接到 ${serverConfig.host}`);
+                updateConnectionStatus(true, 'connected', '连接成功');
                 debugLog('等待对手加入...');
+                
+                // 停止房间发现
+                stopRoomDiscovery();
+                
+                // 将房间添加到房间列表
+                addRoomToList(roomName);
             });
 
             peer.on('connection', (conn) => {
@@ -1634,20 +2904,40 @@
                 }
                 connection = conn;
                 setupConnection();
+                
+                // 房间已满，从列表移除
+                removeRoomFromList(roomName);
             });
 
             peer.on('error', (err) => {
+                // 检查错误是否是 listAllPeers 调用引起的，如果是则忽略
+                const isListPeersError = err.message && (
+                    err.message.includes('retrieving list peers') || 
+                    err.message.includes('Could not get list peers')
+                );
+                
+                if (isListPeersError) {
+                    debugLog('listAllPeers 调用失败，房间列表功能需要自建服务器支持');
+                    return; // 忽略这个错误，不影响已建立的连接
+                }
+                
                 debugLog(`Peer错误: ${err.type} - ${err.message || '无详细信息'}`);
-                updateConnectionStatus(false, 'error', `连接错误: ${err.type}`);
+                updateConnectionStatus(true, 'error', `错误: ${err.type}`);
+                
                 if (err.type === 'unavailable-id') {
-                    debugLog('ID已被使用，重新生成...');
-                    initPeer();
+                    debugLog('ID已被使用，尝试使用随机ID...');
+                    // 使用随机ID重新初始化
+                    const randomSuffix = Math.random().toString(36).substring(2, 7);
+                    const newRoomName = `${roomName}_${randomSuffix}`;
+                    currentRoomName = newRoomName;
+                    initPeer(newRoomName);
                 } else if (err.type === 'peer-unavailable') {
                     showError('房间不存在或已过期，请确认房间号是否正确');
                 } else if (err.type === 'network') {
                     showError('网络错误，请检查网络连接');
                 } else if (err.type === 'server-error') {
-                    showError(`服务器 ${serverConfig.host} 连接失败，请尝试其他服务器`);
+                    // 显示连接错误，但不自动切换，让用户自己选择服务器
+                    showError(`服务器连接失败 (${serverConfigs[currentServerIndex].host})，请尝试其他服务器`, true);
                 } else if (err.message && err.message.includes('ICE failed')) {
                     showError('NAT穿透失败！请尝试以下方法:\n1. 关闭VPN或代理\n2. 切换网络(如手机热点)\n3. 重启路由器', true);
                 } else {
@@ -1659,7 +2949,6 @@
                 debugLog('与信令服务器断开连接');
                 document.getElementById('connectionStatus').textContent = '连接断开';
                 document.getElementById('connectionStatus').className = 'connection-status disconnected';
-                updateConnectionStatus(false, 'error', '与服务器断开连接');
             });
 
             peer.on('close', () => {
@@ -1667,48 +2956,59 @@
             });
         }
 
-        function connectToPeer(peerId) {
-            const cleanId = peerId.trim().toLowerCase();
-            debugLog(`正在连接到: ${cleanId}`);
-            updateConnectionStatus(true, 'connecting', `正在连接服务器...`);
+        function connectToPeer(roomName) {
+            // 保存房间名称
+            currentRoomName = roomName;
+            
+            // 使用用户选择的服务器
+            const selectedIndex = getSelectedServerIndex();
+            currentServerIndex = selectedIndex;
+            
+            // 将房间名称转换为有效的Peer ID
+            const peerId = generatePeerId(roomName.trim());
+            const server = PEER_SERVERS[currentServerIndex];
+            debugLog(`正在连接到房间: ${roomName}，ID: ${peerId}，服务器: ${server.host}:${server.port}...`);
 
-            const serverConfig = getServerConfig();
-            if (!serverConfig) {
-                showError('请先选择并配置服务器');
-                updateConnectionStatus(false, 'error', '服务器未配置');
-                return;
+            if (currentServerIndex > 0) {
+                debugLog(`⚠️ 使用备用服务器: ${server.host}:${server.port}`);
+            }
+            
+            // 更新连接状态
+            updateConnectionStatus(false, 'connecting', `正在连接到 ${server.host}...`);
+            
+            // 停止房间发现
+            stopRoomDiscovery();
+
+            if (peer) {
+                peer.destroy();
             }
 
-            debugLog(`使用服务器: ${serverConfig.host}`);
-
-            if (!peer) {
-                peer = new Peer({
-                    host: serverConfig.host,
-                    port: serverConfig.port,
-                    path: serverConfig.path,
-                    secure: serverConfig.secure,
-                    debug: 2,
-                    config: {
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' },
-                            { urls: 'stun:stun2.l.google.com:19302' },
-                            { urls: 'turn:numb.viagenie.ca', credential: 'muazkh', username: 'webrtc@live.com' },
-                            { urls: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo' },
-                            { urls: 'turn:turnserver.openvpn.net:3478', credential: 'openvpn', username: 'openvpn' }
-                        ]
-                    }
-                });
-            }
+            peer = new Peer({ 
+                host: server.host,
+                port: server.port,
+                path: server.path,
+                secure: server.secure,
+                debug: 2,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        { urls: 'turn:numb.viagenie.ca', credential: 'muazkh', username: 'webrtc@live.com' },
+                        { urls: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo' },
+                        { urls: 'turn:turnserver.openvpn.net:3478', credential: 'openvpn', username: 'openvpn' }
+                    ]
+                }
+            });
 
             const connectCallback = (id) => {
-                debugLog(`连接成功! 正在连接至 ${cleanId}...`);
-                connection = peer.connect(cleanId, { reliable: true });
+                debugLog(`连接成功! 正在连接至房间: ${roomName}...`);
+                updateConnectionStatus(false, 'connected', '连接成功');
+                connection = peer.connect(peerId, { reliable: true });
                 setupConnection();
                 isHost = false;
                 myPlayerId = 2;
-                showWaitingRoom(cleanId);
-                updateConnectionStatus(false, 'success', `已连接到 ${serverConfig.host}`);
+                showWaitingRoom(roomName);  // 显示房间名称
             };
 
             if (peer.open) {
@@ -1718,12 +3018,24 @@
             }
 
             peer.on('error', (err) => {
+                // 检查错误是否是 listAllPeers 调用引起的，如果是则忽略
+                const isListPeersError = err.message && (
+                    err.message.includes('retrieving list peers') || 
+                    err.message.includes('Could not get list peers')
+                );
+                
+                if (isListPeersError) {
+                    debugLog('listAllPeers 调用失败，房间列表功能需要自建服务器支持');
+                    return; // 忽略这个错误，不影响已建立的连接
+                }
+                
                 debugLog(`连接Peer错误: ${err.type}`);
-                updateConnectionStatus(false, 'error', `连接错误: ${err.type}`);
+                updateConnectionStatus(false, 'error', `错误: ${err.type}`);
+                
                 if (err.type === 'peer-unavailable') {
-                    showError(`找不到房间 "${cleanId}"，请确认房间号是否正确`);
-                } else if (err.type === 'server-error') {
-                    showError(`服务器 ${serverConfig.host} 连接失败，请尝试其他服务器`);
+                    showError(`找不到房间 "${roomName}"，请确认房间名称是否正确`);
+                } else if (err.type === 'server-error' || err.type === 'network') {
+                    showError(`服务器连接失败 (${serverConfigs[currentServerIndex].host})，请尝试其他服务器`, true);
                 } else {
                     showError(`连接失败: ${err.type}`);
                 }
@@ -1899,6 +3211,11 @@
                             rBtn.textContent = '双方已确认，开始...';
                             rBtn.disabled = true;
                             if (isHost) startOnlineRematch();
+                        } else {
+                            const rBtn = document.getElementById('rematchBtn');
+                            rBtn.textContent = '对手请求再战！点击接受';
+                            rBtn.disabled = false;
+                            rBtn.onclick = acceptRematch;
                         }
                         break;
                 }
@@ -2059,8 +3376,9 @@
                         rematchState.oppReady = true;
                         if (rematchState.myReady) {
                             const rBtn = document.getElementById('rematchBtn');
-                            rBtn.textContent = '双方已确认，开始...';
+                            rBtn.textContent = '双方已确认，等待主机开始...';
                             rBtn.disabled = true;
+                            sendData({ type: 'rematch_accept' });
                         } else {
                             const rBtn = document.getElementById('rematchBtn');
                             rBtn.textContent = '对手请求再战！点击接受';
@@ -2073,7 +3391,7 @@
                         rematchState.oppReady = true;
                         if (rematchState.myReady) {
                             const rBtn = document.getElementById('rematchBtn');
-                            rBtn.textContent = '双方已确认，开始...';
+                            rBtn.textContent = '双方已确认，等待主机开始...';
                             rBtn.disabled = true;
                         }
                         break;
@@ -2204,8 +3522,8 @@
             const c2 = getChar(c2Id);
             gameState = {
                 mechas: {
-                    player1: { x: 100, y: GROUND_Y, health: c1.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: true, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c1.id, isCharging: false },
-                    player2: { x: 550, y: GROUND_Y, health: c2.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: false, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c2.id, isCharging: false }
+                    player1: { x: 100, y: GROUND_Y, health: c1.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: true, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c1.id, isCharging: false, damageHistory: [], isDowned: false, downTimer: 0, invincibilityTimer: 0 },
+                    player2: { x: 550, y: GROUND_Y, health: c2.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: false, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c2.id, isCharging: false, damageHistory: [], isDowned: false, downTimer: 0, invincibilityTimer: 0 }
                 },
                 gameStatus: 'playing',
                 winner: null
@@ -2233,8 +3551,8 @@
             const c2Id = gameState.mechas.player2.characterId;
             const c1 = getChar(c1Id);
             const c2 = getChar(c2Id);
-            gameState.mechas.player1 = { x: 100, y: GROUND_Y, health: c1.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: true, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c1.id, isCharging: false };
-            gameState.mechas.player2 = { x: 550, y: GROUND_Y, health: c2.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: false, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c2.id, isCharging: false };
+            gameState.mechas.player1 = { x: 100, y: GROUND_Y, health: c1.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: true, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c1.id, isCharging: false, damageHistory: [], isDowned: false, downTimer: 0, invincibilityTimer: 0 };
+            gameState.mechas.player2 = { x: 550, y: GROUND_Y, health: c2.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: false, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c2.id, isCharging: false, damageHistory: [], isDowned: false, downTimer: 0, invincibilityTimer: 0 };
             gameState.gameStatus = 'playing';
             gameState.winner = null;
             fireballs = [];
@@ -2275,7 +3593,7 @@
             rematchState.myReady = true;
             sendData({ type: 'rematch_accept' });
             const btn = document.getElementById('rematchBtn');
-            btn.textContent = '已确认，等待开始...';
+            btn.textContent = isHost ? '双方已确认，开始...' : '已确认，等待主机开始...';
             btn.disabled = true;
             if (isHost) startOnlineRematch();
         }
@@ -2285,7 +3603,7 @@
             showGame();
             restartGame();
             isGameActive = true;
-            showGame();
+            rematchState = { myReady: false, oppReady: false };
             if (isHost) {
                 sendData({
                     type: 'game_state_sync',
@@ -2295,7 +3613,6 @@
                     isStart: true
                 });
             }
-            rematchState = { myReady: false, oppReady: false };
         }
 
         function triggerScreenShake(intensity) { screenShake.intensity = Math.max(screenShake.intensity, intensity * 2); }
@@ -2635,17 +3952,56 @@
             playAttackSound();
         }
 
+        function handleDownedState(mecha) {
+            if (mecha.isDowned && mecha.downTimer > 0) {
+                mecha.downTimer--;
+                mecha.hitStun = 60; 
+                
+                if (mecha.downTimer <= 0) {
+                    mecha.isDowned = false;
+                    mecha.state = 'idle';
+                    mecha.invincibilityTimer = 60; 
+                    mecha.damageHistory = []; 
+                }
+            }
+        }
+
         function applyMeleeHit(my, opp, myNum, oppChar, moveCfg) {
+            if (opp.invincibilityTimer > 0) {
+                return;
+            }
+            
             let d = moveCfg.damage;
             if (opp.isCharging) d = Math.floor(d * 1.5);
             if (opp.isDefending) d = Math.floor(d * oppChar.defenseReduction);
+            
+            // 记录伤害历史用于判断重击倒地
+            const now = Date.now();
+            opp.damageHistory = opp.damageHistory.filter(h => now - h.time < 3000);
+            opp.damageHistory.push({ time: now, damage: d });
+            const recentDamage = opp.damageHistory.reduce((sum, h) => sum + h.damage, 0);
+            
             opp.health = Math.max(0, opp.health - d);
-            opp.state = 'hit'; opp.hitStun = oppChar.hitStun; opp.flashTimer = 48;
-            opp.knockbackVelX = my.facingRight ? moveCfg.knockback : -moveCfg.knockback;
-            triggerScreenShake(moveCfg.knockback * 0.3);
-            const hitX = opp.x + oppChar.size/2;
-            const hitY = opp.y + oppChar.size/2;
-            spawnImpactParticles(hitX, hitY, 8 + moveCfg.damage * 2);
+            
+            // 检查是否触发重击倒地：3秒内受到超过40点伤害
+            if (recentDamage > 40 && !opp.isDowned) {
+                opp.state = 'downed';
+                opp.isDowned = true;
+                opp.downTimer = 180; 
+                opp.hitStun = 0;
+                opp.flashTimer = 48;
+                opp.knockbackVelX = my.facingRight ? moveCfg.knockback * 2 : -moveCfg.knockback * 2;
+                triggerScreenShake(moveCfg.knockback * 0.5);
+                spawnImpactParticles(opp.x + oppChar.size/2, opp.y + oppChar.size/2, 30);
+            } else {
+                opp.state = 'hit';
+                opp.hitStun = oppChar.hitStun;
+                opp.flashTimer = 48;
+                opp.knockbackVelX = my.facingRight ? moveCfg.knockback : -moveCfg.knockback;
+                triggerScreenShake(moveCfg.knockback * 0.3);
+                spawnImpactParticles(opp.x + oppChar.size/2, opp.y + oppChar.size/2, 8 + moveCfg.damage * 2);
+            }
+            
             myNum === 'player1' ? playHitSound() : playHitSound2();
             updateHealthUI();
             syncLogEntry('hit_local', `${myNum} hits`);
@@ -2672,8 +4028,17 @@
             const c1 = getChar(p1.characterId), c2 = getChar(p2.characterId);
 
             const attackStates = ['attackWindup', 'attack', 'attackRecovery'];
-            p1.state = (p1.state === 'hit' || attackStates.includes(p1.state)) ? p1.state : 'idle';
-            p2.state = (p2.state === 'hit' || attackStates.includes(p2.state)) ? p2.state : 'idle';
+            
+            // 处理倒地状态
+            handleDownedState(p1);
+            handleDownedState(p2);
+            
+            // 更新无敌时间
+            if (p1.invincibilityTimer > 0) p1.invincibilityTimer--;
+            if (p2.invincibilityTimer > 0) p2.invincibilityTimer--;
+            
+            p1.state = (p1.state === 'hit' || p1.state === 'downed' || attackStates.includes(p1.state)) ? p1.state : 'idle';
+            p2.state = (p2.state === 'hit' || p2.state === 'downed' || attackStates.includes(p2.state)) ? p2.state : 'idle';
 
             if (p1.flashTimer > 0) p1.flashTimer--;
             if (p2.flashTimer > 0) p2.flashTimer--;
@@ -2695,16 +4060,37 @@
                     // 在联机模式下，只有主机才执行伤害判定！客机只负责同步状态和显示！
                     const isHostDoingDamage = gameMode !== 'online' || isHost;
                     
-                    if (isHostDoingDamage) {
+                    if (isHostDoingDamage && def.invincibilityTimer <= 0) {
                         if (!def.isDefending) {
                             let dmg = f.damage || 10;
                             if (def.isCharging) dmg = Math.floor(dmg * 1.5);
+                            
+                            // 记录伤害历史用于判断重击倒地
+                            const now = Date.now();
+                            def.damageHistory = def.damageHistory.filter(h => now - h.time < 3000);
+                            def.damageHistory.push({ time: now, damage: dmg });
+                            const recentDamage = def.damageHistory.reduce((sum, h) => sum + h.damage, 0);
+                            
                             def.health = Math.max(0, def.health - dmg);
-                            def.state = 'hit'; def.hitStun = defChar.hitStun; def.flashTimer = 48;
+                            
+                            // 检查是否触发重击倒地：3秒内受到超过40点伤害
                             const knockback = f.knockback || 30;
-                            def.knockbackVelX = f.vx > 0 ? knockback : -knockback;
-                            triggerScreenShake(knockback * 0.4);
-                            spawnImpactParticles(f.x, f.y, 10);
+                            if (recentDamage > 40 && !def.isDowned) {
+                                def.state = 'downed';
+                                def.isDowned = true;
+                                def.downTimer = 180;
+                                def.hitStun = 0;
+                                def.flashTimer = 48;
+                                def.knockbackVelX = f.vx > 0 ? knockback * 2 : -knockback * 2;
+                                triggerScreenShake(knockback * 0.5);
+                                spawnImpactParticles(f.x, f.y, 30);
+                            } else {
+                                def.state = 'hit'; def.hitStun = defChar.hitStun; def.flashTimer = 48;
+                                def.knockbackVelX = f.vx > 0 ? knockback : -knockback;
+                                triggerScreenShake(knockback * 0.4);
+                                spawnImpactParticles(f.x, f.y, 10);
+                            }
+                            
                             f.owner === 'player1' ? playHitSound() : playHitSound2();
                             updateHealthUI();
                             
@@ -2734,14 +4120,35 @@
                                 }
                                 showGameOver();
                             }
-                        } else if (f.isSuper) {
+                        } else if (f.isSuper && def.invincibilityTimer <= 0) {
                             const dmg = Math.floor((f.damage || 10) * 0.5);
+                            
+                            // 记录伤害历史用于判断重击倒地
+                            const now = Date.now();
+                            def.damageHistory = def.damageHistory.filter(h => now - h.time < 3000);
+                            def.damageHistory.push({ time: now, damage: dmg });
+                            const recentDamage = def.damageHistory.reduce((sum, h) => sum + h.damage, 0);
+                            
                             def.health = Math.max(0, def.health - dmg);
-                            def.state = 'hit'; def.hitStun = defChar.hitStun; def.flashTimer = 48;
+                            
+                            // 检查是否触发重击倒地：3秒内受到超过40点伤害
                             const knockback = f.knockback || 30;
-                            def.knockbackVelX = f.vx > 0 ? knockback : -knockback;
-                            triggerScreenShake(knockback * 0.4);
-                            spawnImpactParticles(f.x, f.y, 10);
+                            if (recentDamage > 40 && !def.isDowned) {
+                                def.state = 'downed';
+                                def.isDowned = true;
+                                def.downTimer = 180;
+                                def.hitStun = 0;
+                                def.flashTimer = 48;
+                                def.knockbackVelX = f.vx > 0 ? knockback * 2 : -knockback * 2;
+                                triggerScreenShake(knockback * 0.5);
+                                spawnImpactParticles(f.x, f.y, 30);
+                            } else {
+                                def.state = 'hit'; def.hitStun = defChar.hitStun; def.flashTimer = 48;
+                                def.knockbackVelX = f.vx > 0 ? knockback : -knockback;
+                                triggerScreenShake(knockback * 0.4);
+                                spawnImpactParticles(f.x, f.y, 10);
+                            }
+                            
                             f.owner === 'player1' ? playHitSound() : playHitSound2();
                             updateHealthUI();
                             
@@ -3161,29 +4568,36 @@
             }
         }
 
-        function gameLoop() { gameFrame++; update(); draw(); requestAnimationFrame(gameLoop); }
+        function gameLoop() { 
+            gameFrame++; 
+            // 暂停时只渲染，不更新游戏逻辑
+            if (!isPaused) {
+                update(); 
+            }
+            draw(); 
+            requestAnimationFrame(gameLoop); 
+        }
 
         document.getElementById('singleBtn').addEventListener('click', () => { startSingleGame(); initGameState(); });
         document.getElementById('onlineBtn').addEventListener('click', () => { startOnlineGame(); showOnlineLobby(); });
         document.getElementById('backToModeBtn').addEventListener('click', backToMenu);
-        document.getElementById('testServersBtn').addEventListener('click', () => { testAllServers(); });
-        document.getElementById('editServerBtn').addEventListener('click', () => { openSettings('server'); });
-
-        document.querySelectorAll('input[name="serverSelect"]').forEach(radio => {
-            radio.addEventListener('change', () => {
-                updateServerSelectUI();
-                const selectedIndex = getSelectedServerIndex();
-                setServerStatus(selectedIndex, 'offline', '离线');
-            });
+        document.getElementById('createRoomBtn').addEventListener('click', () => {
+            let roomName = document.getElementById('roomNameInput').value.trim();
+            
+            // 如果房间名称为空，自动生成随机名称
+            if (roomName.length === 0) {
+                roomName = generateRandomRoomName();
+                document.getElementById('roomNameInput').value = roomName;
+            }
+            
+            initPeer(roomName);
         });
-
-        document.getElementById('createRoomBtn').addEventListener('click', () => { initPeer(); });
         document.getElementById('joinRoomBtn').addEventListener('click', () => {
             const code = document.getElementById('roomCodeInput').value.trim();
             if (code.length > 0) {
                 connectToPeer(code);
             } else {
-                showError('请输入房间号');
+                showError('请输入房间名称');
             }
         });
         document.getElementById('startGameBtn').addEventListener('click', () => {
@@ -3215,7 +4629,7 @@
             debugLog('游戏初始化完成，等待对手...');
         });
         document.getElementById('leaveRoomBtn').addEventListener('click', backToMenu);
-        document.getElementById('copyBtn').addEventListener('click', copyRoomCode);
+        document.getElementById('copyBtn').addEventListener('click', copyRoomName);
         document.getElementById('startBtn').addEventListener('click', () => { showGame(); restartGame(); });
         document.getElementById('muteBtn').addEventListener('click', toggleMute);
         document.getElementById('copySyncLogBtn').addEventListener('click', () => {
@@ -3230,19 +4644,114 @@
             syncLog = [];
         });
 
+        // 服务器测试按钮事件
+        document.getElementById('testServersBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('testServersBtn');
+            btn.textContent = '测试中...';
+            btn.disabled = true;
+            
+            try {
+                await testAllServers();
+            } finally {
+                btn.textContent = '测试服务器';
+                btn.disabled = false;
+            }
+        });
+
+        // 刷新房间列表按钮事件
+        document.getElementById('refreshRoomListBtn').addEventListener('click', () => {
+            refreshRoomList();
+        });
+
+        // 服务器选择变化事件
+        document.querySelectorAll('input[name="server"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const index = parseInt(radio.closest('.server-option').dataset.index);
+                debugLog(`选择了服务器 ${index}`);
+                
+                // 更新选中状态样式
+                document.querySelectorAll('.server-option').forEach((option, i) => {
+                    if (i === index) {
+                        option.classList.add('selected');
+                        option.querySelector('.server-selected-badge').style.display = 'inline-block';
+                    } else {
+                        option.classList.remove('selected');
+                        option.querySelector('.server-selected-badge').style.display = 'none';
+                    }
+                });
+                
+                // 如果当前在联机大厅，重新检测服务器功能
+                const onlineLobby = document.getElementById('onlineLobby');
+                if (onlineLobby && onlineLobby.classList.contains('show')) {
+                    debugLog('服务器切换，重新检测房间列表功能...');
+                    // 重置状态
+                    roomDiscoveryEnabled = false;
+                    stopRoomDiscovery();
+                    // 显示检测中状态
+                    document.getElementById('roomListPanel').style.display = 'none';
+                    document.getElementById('roomListUnavailablePanel').style.display = 'flex';
+                    document.querySelector('.unavailable-message').innerHTML = '<p>🔍 正在检测服务器...</p>';
+                    // 重新检测
+                    testServerDiscovery();
+                }
+            });
+        });
+
+        // 初始化服务器选择UI
+        updateServerSelectUI();
+
         window.addEventListener('keydown', (e) => {
+            // 如果正在录制键位，只处理键位录制，不处理游戏按键
+            if (currentKeybind) {
+                recordKey(e);
+                return;
+            }
+            
+            // Backquote (`) 键切换同步日志
+            if (e.code === 'Backquote') {
+                const panel = document.getElementById('syncLogPanel');
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+                e.preventDefault();
+                return;
+            }
+            
+            // ESC 键暂停/继续
+            if (e.code === 'Escape') {
+                const settingsPanel = document.getElementById('settingsPanel');
+                if (settingsPanel.classList.contains('show')) {
+                    // 如果在设置面板中，关闭设置面板
+                    closeSettings();
+                } else {
+                    // 否则暂停/继续游戏
+                    togglePause();
+                }
+                e.preventDefault();
+                return;
+            }
+            
             keys[e.code] = true;
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
             if (gameState && gameState.gameStatus === 'title') showGame();
-            if (e.code === 'Backquote' && gameMode === 'online') {
-                const panel = document.getElementById('syncLogPanel');
-                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-            }
         });
 
         window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
-        updateServerSelectUI();
+        // 初始化时清理房间列表相关的 localStorage，保留服务器配置和键位设置
+        function clearRoomListStorage() {
+            try {
+                // 清理房间列表相关的数据
+                localStorage.removeItem('gameRooms');
+                localStorage.removeItem('roomList');
+                localStorage.removeItem('discoveredRooms');
+                debugLog('已清理房间列表 localStorage');
+            } catch (e) {
+                debugLog('清理 localStorage 失败: ' + e.message);
+            }
+        }
+        
+        // 页面初始化时清理房间列表存储
+        clearRoomListStorage();
+        
         showModeSelect();
         gameLoop();
     </script>

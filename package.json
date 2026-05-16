@@ -1,0 +1,11 @@
+{
+  "name": "mecha-fight-online",
+  "version": "1.0.0",
+  "description": "像素风机甲对战 - 支持局域网联机",
+  "main": "http-server.js",
+  "scripts": {
+    "start": "node http-server.js",
+    "dev": "node http-server.js"
+  },
+  "dependencies": {}
+}
