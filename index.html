@@ -574,11 +574,20 @@
         }
 
         .game-controls {
-            margin-top: 20px;
+            position: fixed;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
             display: none;
-            gap: 40px;
+            flex-direction: column;
+            gap: 15px;
             color: #fff;
             font-size: 12px;
+            z-index: 200;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .game-controls.show {
@@ -592,8 +601,8 @@
         }
 
         .controls-column h3 {
-            font-size: 15px;
-            margin-bottom: 10px;
+            font-size: 14px;
+            margin-bottom: 5px;
             color: #00ffff;
         }
 
@@ -2753,7 +2762,13 @@
             
             function processPeerList(peers) {
                 if (peers && Array.isArray(peers)) {
-                    const gameRooms = peers.filter(id => id.startsWith('mf'));
+                    const gameRooms = peers.filter(id => {
+                        // 过滤临时连接ID（mf_开头）和无法解码的ID
+                        if (id.startsWith('mf_')) return false;
+                        if (!id.startsWith('mf')) return false;
+                        try { decodePeerId(id); return true; }
+                        catch (e) { return false; }
+                    });
                     roomList = gameRooms.map(peerId => ({
                         peerId: peerId,
                         name: decodePeerId(peerId),
@@ -2917,12 +2932,14 @@
             }
         }
         
-        // Base64 编解码中文房间名
+        // Base64 编解码中文房间名（生成 PeerJS 兼容的无等号短ID）
         function encodeRoomName(name) {
-            return btoa(encodeURIComponent(name));
+            return btoa(encodeURIComponent(name)).replace(/=+/g, '').replace(/\+/g, '-').replace(/\//g, '_');
         }
         function decodeRoomName(encoded) {
-            return decodeURIComponent(atob(encoded));
+            let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4 !== 0) base64 += '=';
+            return decodeURIComponent(atob(base64));
         }
         
         // 生成有效的 Peer ID（用 Base64 编码中文）
