@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Sprite Sheet 配置工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #1a1a2e; color: #fff; font-family: 'Courier New', monospace; padding: 20px; }
+        h1 { color: #00ffff; margin-bottom: 15px; text-align: center; }
+        .container { display: flex; gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .left { flex: 1; }
+        .right { width: 450px; }
+        .canvas-container { background: #000; border: 2px solid #00ffff; max-height: 600px; overflow: auto; }
+        canvas { cursor: crosshair; }
+        .panel { background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+        .panel h3 { color: #ff9900; margin-bottom: 10px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; margin-bottom: 3px; font-size: 12px; color: #aaa; }
+        .form-group input { width: 100%; padding: 6px; background: #0a0a1a; border: 1px solid #444; color: #fff; border-radius: 4px; }
+        .form-group input[type="number"] { width: 70px; }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+        button { background: #00ffff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 8px; }
+        button:hover { background: #00cccc; }
+        button.secondary { background: #ff9900; }
+        button.danger { background: #ff4444; color: #fff; }
+        .animation-list { max-height: 250px; overflow-y: auto; border: 1px solid #333; padding: 10px; border-radius: 4px; }
+        .animation-item { padding: 8px; margin-bottom: 5px; background: rgba(255,255,255,0.05); border-radius: 4px; cursor: pointer; border-left: 3px solid #ff9900; }
+        .animation-item:hover { background: rgba(255,255,255,0.1); }
+        .animation-item.active { border-color: #00ffff; background: rgba(0,255,255,0.1); }
+        .animation-item .name { font-weight: bold; color: #ff9900; font-size: 13px; }
+        .animation-item .details { font-size: 11px; color: #888; margin-top: 3px; }
+        #outputCode { width: 100%; min-height: 150px; background: #000; border: 1px solid #333; padding: 10px; color: #0f0; font-size: 11px; border-radius: 4px; }
+        .instructions { background: rgba(255,153,0,0.1); border: 1px solid #ff9900; padding: 12px; margin-bottom: 15px; border-radius: 8px; }
+        .instructions h4 { color: #ff9900; margin-bottom: 8px; }
+        .instructions li { font-size: 12px; margin-bottom: 5px; margin-left: 20px; }
+        .info-bar { background: rgba(0,255,255,0.1); padding: 8px; margin-bottom: 10px; font-size: 12px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🎨 Sprite Sheet 动画配置工具</h1>
+    
+    <div class="instructions">
+        <h4>📖 使用说明</h4>
+        <ol>
+            <li>确保 anime.png 在同一目录，页面会自动加载</li>
+            <li>在图片上按住鼠标拖动框选动画帧区域</li>
+            <li>填写动画名称、速度等信息，点击"添加"</li>
+            <li>完成后点击"生成配置代码"，复制给我</li>
+        </ol>
+    </div>
+
+    <div class="container">
+        <div class="left">
+            <div class="info-bar">
+                <span id="mousePos">鼠标: -</span> | 
+                <span id="selectionInfo">选择: -</span> | 
+                <span id="gridInfo">网格: 64×64</span>
+                <div style="margin-top: 5px;">
+                    <label>网格宽: <input type="number" id="gridWidthInput" value="64" min="16" max="512" style="width: 50px;"></label>
+                    <label>× 网格高: <input type="number" id="gridHeightInput" value="64" min="16" max="512" style="width: 50px;"></label>
+                    <button onclick="updateGridSize()" style="padding: 4px 8px;">应用</button>
+                </div>
+            </div>
+            <div class="canvas-container">
+                <canvas id="spriteCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="right">
+            <div class="panel">
+                <h3>✏️ 动画参数</h3>
+                <div class="form-group">
+                    <label>动画ID（英文）</label>
+                    <input type="text" id="animId" placeholder="例如: idle, walk">
+                </div>
+                <div class="form-group">
+                    <label>显示名称（中文）</label>
+                    <input type="text" id="animName" placeholder="例如: 待机, 行走">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>起始行</label>
+                        <input type="number" id="startRow" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>起始列</label>
+                        <input type="number" id="startCol" value="0" min="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>帧数</label>
+                        <input type="number" id="frameCount" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>FPS</label>
+                        <input type="number" id="fps" value="5" min="1" max="60">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="loopAnim" checked> 循环播放</label>
+                </div>
+                <div>
+                    <button onclick="addAnimation()">➕ 添加</button>
+                    <button class="secondary" onclick="updateAnimation()">🔄 更新</button>
+                    <button class="danger" onclick="deleteAnimation()">🗑️ 删除</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>📋 动画列表 (<span id="animCount">0</span>个)</h3>
+                <div class="animation-list" id="animationList">
+                    <div style="color: #666; text-align: center; padding: 20px;">暂无配置</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>📤 配置代码</h3>
+                <textarea id="outputCode" readonly placeholder="点击下方按钮生成..."></textarea>
+                <button onclick="generateCode()" style="margin-top: 10px; width: 100%;">📋 生成配置代码</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('spriteCanvas');
+        const ctx = canvas.getContext('2d');
+        let spriteSheet = new Image();
+        let animations = [];
+        let selectedIndex = -1;
+        let isDragging = false;
+        let dragStart = {x: 0, y: 0};
+        let selection = null;
+        let gridWidth = 64;
+        let gridHeight = 64;
+        const colors = ['#ff0000','#00ff00','#0000ff','#ffff00','#ff00ff','#00ffff','#ff9900','#9900ff'];
+
+        spriteSheet.src = 'anime.png';
+        spriteSheet.onload = function() {
+            canvas.width = spriteSheet.width;
+            canvas.height = spriteSheet.height;
+            draw();
+        };
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(spriteSheet, 0, 0);
+            
+            // 绘制网格
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= canvas.width; x += gridWidth) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += gridHeight) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            // 绘制已配置动画
+            animations.forEach((anim, i) => {
+                const color = colors[i % colors.length];
+                const x = anim.startCol * gridWidth;
+                const y = anim.startRow * gridHeight;
+                const w = anim.frameCount * gridWidth;
+                ctx.strokeStyle = color; ctx.lineWidth = 3;
+                ctx.fillStyle = color + '30';
+                ctx.fillRect(x, y, w, gridHeight);
+                ctx.strokeRect(x, y, w, gridHeight);
+                ctx.fillStyle = color;
+                ctx.font = 'bold 14px Courier New';
+                ctx.fillText(`${i+1}. ${anim.name}`, x + 5, y + 20);
+                if (i === selectedIndex) {
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeRect(x - 5, y - 5, w + 10, gridHeight + 10);
+                    ctx.setLineDash([]);
+                }
+            });
+
+            // 绘制当前选择
+            if (selection) {
+                ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2;
+                ctx.fillStyle = 'rgba(0,255,255,0.2)';
+                ctx.fillRect(selection.x, selection.y, selection.width, selection.height);
+                ctx.strokeRect(selection.x, selection.y, selection.width, selection.height);
+                ctx.fillStyle = '#00ffff';
+                ctx.font = '12px Courier New';
+                ctx.fillText(`行:${selection.startRow} 列:${selection.startCol}-${selection.startCol + selection.frameCount - 1}`, selection.x + 5, selection.y + 15);
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            dragStart.x = (e.clientX - rect.left) * scaleX;
+            dragStart.y = (e.clientY - rect.top) * scaleY;
+            isDragging = true;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            document.getElementById('mousePos').textContent = `鼠标: (${Math.floor(x)}, ${Math.floor(y)})`;
+            
+            if (isDragging) {
+                const startCol = Math.floor(Math.min(dragStart.x, x) / gridWidth);
+                const startRow = Math.floor(Math.min(dragStart.y, y) / gridHeight);
+                const endCol = Math.floor(Math.max(dragStart.x, x) / gridWidth);
+                selection = {
+                    x: startCol * gridWidth, y: startRow * gridHeight,
+                    width: (endCol - startCol + 1) * gridWidth, height: gridHeight,
+                    startRow: startRow, startCol: startCol, frameCount: endCol - startCol + 1
+                };
+                document.getElementById('selectionInfo').textContent = `选择: 行${startRow} 列${startCol}-${endCol} 共${selection.frameCount}帧`;
+                document.getElementById('startRow').value = startRow;
+                document.getElementById('startCol').value = startCol;
+                document.getElementById('frameCount').value = selection.frameCount;
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => { isDragging = false; });
+        canvas.addEventListener('mouseleave', () => { isDragging = false; });
+
+        function updateGridSize() {
+            gridWidth = parseInt(document.getElementById('gridWidthInput').value) || 64;
+            gridHeight = parseInt(document.getElementById('gridHeightInput').value) || 64;
+            document.getElementById('gridInfo').textContent = `网格: ${gridWidth}×${gridHeight}`;
+            draw();
+        }
+
+        function addAnimation() {
+            const id = document.getElementById('animId').value.trim();
+            const name = document.getElementById('animName').value.trim() || id;
+            if (!id) { alert('请输入动画ID'); return; }
+            const anim = {
+                id, name,
+                startRow: parseInt(document.getElementById('startRow').value),
+                startCol: parseInt(document.getElementById('startCol').value),
+                frameCount: parseInt(document.getElementById('frameCount').value),
+                fps: parseInt(document.getElementById('fps').value),
+                loop: document.getElementById('loopAnim').checked,
+                frames: Array.from({length: parseInt(document.getElementById('frameCount').value)}, (_, i) => parseInt(document.getElementById('startCol').value) + i)
+            };
+            animations.push(anim);
+            selectedIndex = animations.length - 1;
+            updateList();
+            draw();
+            selection = null;
+            document.getElementById('animCount').textContent = animations.length;
+        }
+
+        function updateAnimation() {
+            if (selectedIndex < 0) { alert('请先选择动画'); return; }
+            const anim = animations[selectedIndex];
+            anim.id = document.getElementById('animId').value.trim();
+            anim.name = document.getElementById('animName').value.trim() || anim.id;
+            anim.startRow = parseInt(document.getElementById('startRow').value);
+            anim.startCol = parseInt(document.getElementById('startCol').value);
+            anim.frameCount = parseInt(document.getElementById('frameCount').value);
+            anim.fps = parseInt(document.getElementById('fps').value);
+            anim.loop = document.getElementById('loopAnim').checked;
+            anim.frames = Array.from({length: anim.frameCount}, (_, i) => anim.startCol + i);
+            updateList();
+            draw();
+        }
+
+        function deleteAnimation() {
+            if (selectedIndex < 0) { alert('请先选择动画'); return; }
+            if (confirm('确定删除?')) {
+                animations.splice(selectedIndex, 1);
+                selectedIndex = -1;
+                updateList();
+                draw();
+                document.getElementById('animCount').textContent = animations.length;
+            }
+        }
+
+        function selectAnimation(index) {
+            selectedIndex = index;
+            const anim = animations[index];
+            document.getElementById('animId').value = anim.id;
+            document.getElementById('animName').value = anim.name;
+            document.getElementById('startRow').value = anim.startRow;
+            document.getElementById('startCol').value = anim.startCol;
+            document.getElementById('frameCount').value = anim.frameCount;
+            document.getElementById('fps').value = anim.fps;
+            document.getElementById('loopAnim').checked = anim.loop;
+            updateList();
+            draw();
+        }
+
+        function updateList() {
+            const list = document.getElementById('animationList');
+            if (animations.length === 0) {
+                list.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">暂无配置</div>';
+                return;
+            }
+            list.innerHTML = animations.map((anim, i) => `
+                <div class="animation-item ${i === selectedIndex ? 'active' : ''}" onclick="selectAnimation(${i})">
+                    <div class="name">${i+1}. ${anim.name} (${anim.id})</div>
+                    <div class="details">行${anim.startRow} 列${anim.startCol} | ${anim.frameCount}帧 | ${anim.fps}FPS | ${anim.loop ? '循环' : '不循环'}</div>
+                </div>
+            `).join('');
+        }
+
+        function generateCode() {
+            if (animations.length === 0) {
+                alert('请先添加动画配置');
+                return;
+            }
+            const code = `// Sprite Sheet 配置 (自动生成)\nconst SPRITE_CONFIG = {\n    frameWidth: ${gridWidth},\n    frameHeight: ${gridHeight},\n    scale: 2\n};\n\nconst ANIMATIONS = {\n${animations.map((a, i) => `    ${a.id}: { name: '${a.name}', row: ${a.startRow}, frames: [${a.frames.join(', ')}], fps: ${a.fps}, loop: ${a.loop} }${i < animations.length - 1 ? ',' : ''}`).join('\n')}\n};`;
+            document.getElementById('outputCode').value = code;
+        }
+    </script>
+</body>
+</html>
