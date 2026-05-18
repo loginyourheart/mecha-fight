@@ -15,3 +15,11 @@ logs/
 
 # Development memory (local only, not uploaded)
 memory.md
+
+# Temporary tools (not committed)
+tmptools/
+.gh-config/
+
+# Project config (not needed)
+package.json
+package-lock.json
