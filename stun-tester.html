@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STUN 服务器延迟测试工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        h1 {
+            text-align: center;
+            color: #00d4ff;
+            margin-bottom: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .upload-zone {
+            border: 3px dashed #00d4ff;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: rgba(0, 212, 255, 0.05);
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-zone:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: #00ff00;
+        }
+        .upload-zone.dragover {
+            background: rgba(0, 255, 0, 0.1);
+            border-color: #00ff00;
+        }
+        .upload-zone input {
+            display: none;
+        }
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .upload-text {
+            font-size: 18px;
+            color: #aaa;
+        }
+        .upload-hint {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .file-info {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .file-info.show { display: block; }
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: 2px solid #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: rgba(0, 212, 255, 0.3);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .server-count {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #aaa;
+        }
+        .progress {
+            width: 100%;
+            height: 24px;
+            background: #333;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #00ff00);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #000;
+            font-weight: bold;
+        }
+        .results {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            border: 1px solid #333;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        .results-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.5fr 1fr;
+            font-weight: bold;
+            padding: 12px 15px;
+            background: rgba(0, 212, 255, 0.2);
+            position: sticky;
+            top: 0;
+        }
+        .result-item {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.5fr 1fr;
+            padding: 10px 15px;
+            border-bottom: 1px solid #333;
+            align-items: center;
+            font-size: 14px;
+        }
+        .result-item:hover { background: rgba(255,255,255,0.03); }
+        .server-addr { font-family: monospace; }
+        .latency { font-weight: bold; }
+        .latency.excellent { color: #00ff00; }
+        .latency.good { color: #88ff00; }
+        .latency.average { color: #ffff00; }
+        .latency.poor { color: #ff8800; }
+        .latency.failed { color: #ff4444; }
+        .status { font-size: 12px; }
+        .summary {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 12px;
+            border: 1px solid #00d4ff;
+        }
+        .summary h3 { color: #00d4ff; margin-bottom: 15px; }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .summary-item {
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .summary-label { font-size: 12px; color: #888; margin-bottom: 5px; }
+        .summary-value { font-size: 20px; font-weight: bold; }
+        .best-servers {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .best-servers h4 { color: #00ff00; margin-bottom: 15px; }
+        .best-server {
+            display: inline-block;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin: 5px;
+            font-family: monospace;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .best-server:hover {
+            background: rgba(0, 255, 0, 0.2);
+            transform: scale(1.05);
+        }
+        .config-output {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 8px;
+        }
+        .config-output h4 { color: #00d4ff; margin-bottom: 10px; }
+        .config-output pre {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 STUN 服务器延迟测试工具</h1>
+
+        <div class="upload-zone" id="uploadZone">
+            <input type="file" id="csvInput" accept=".csv,.txt">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">拖放 CSV 文件到这里，或点击选择文件</div>
+            <div class="upload-hint">支持 FOFA 导出的 CSV/TXT 格式，自动解析 host,ip,port 字段</div>
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <strong>📄 已加载文件：</strong>
+            <span id="fileName"></span>
+            <span> | 服务器数量：</span>
+            <span id="serverCount" style="color: #00ff00; font-weight: bold;"></span>
+        </div>
+
+        <div class="checkbox-group">
+            <label><input type="checkbox" id="chkCsv" checked> CSV文件服务器</label>
+            <label><input type="checkbox" id="chkPublic"> 公共服务器（Google/Twilio等）</label>
+        </div>
+
+        <div class="controls">
+            <button id="testBtn" onclick="startTest()" disabled>开始测试</button>
+            <button id="stopBtn" onclick="stopTest()" disabled>停止测试</button>
+            <button onclick="clearResults()">清空结果</button>
+            <button id="exportBtn" onclick="exportValidServers()" disabled>导出有效服务器</button>
+            <button id="copyBtn" onclick="copyConfig()" disabled>复制配置</button>
+        </div>
+
+        <div class="progress" id="progressBar" style="display: none;">
+            <div class="progress-bar" id="progressFill">0%</div>
+        </div>
+
+        <div class="results" id="results" style="display: none;">
+            <div class="results-header">
+                <div>服务器地址</div>
+                <div>延迟 (ms)</div>
+                <div>状态</div>
+                <div>位置</div>
+            </div>
+            <div id="resultsList"></div>
+        </div>
+
+        <div class="summary" id="summary" style="display: none;">
+            <h3>📊 测试摘要</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-label">总测试服务器</div>
+                    <div class="summary-value" id="totalCount">0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">成功连接</div>
+                    <div class="summary-value" id="successCount" style="color: #00ff00;">0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">失败/超时</div>
+                    <div class="summary-value" id="failedCount" style="color: #ff4444;">0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">平均延迟</div>
+                    <div class="summary-value" id="avgLatency">0 ms</div>
+                </div>
+            </div>
+
+            <div class="best-servers">
+                <h4>🏆 最佳服务器（点击可复制单个地址）</h4>
+                <div id="bestServersList"></div>
+            </div>
+
+            <div class="config-output">
+                <h4>📋 WebRTC ICE 配置（可直接复制到游戏代码中）</h4>
+                <pre id="configOutput"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 公共STUN服务器列表
+        const PUBLIC_SERVERS = [
+            { addr: "stun.l.google.com:19302", geo: "Google (美国)" },
+            { addr: "stun1.l.google.com:19302", geo: "Google (美国)" },
+            { addr: "stun2.l.google.com:19302", geo: "Google (美国)" },
+            { addr: "stun.qq.com:3478", geo: "腾讯QQ (中国)" },
+            { addr: "stun.miwifi.com:3478", geo: "小米 (中国)" },
+            { addr: "stun.nordvpn.com:3478", geo: "NordVPN" },
+            { addr: "global.stun.twilio.com:3478", geo: "Twilio" },
+            { addr: "52.47.70.236:3478", geo: "AWS (欧洲)" },
+            { addr: "3.78.237.53:3478", geo: "AWS (欧洲)" },
+            { addr: "188.40.203.74:3478", geo: "Hetzner (德国)" }
+        ];
+
+        let csvServers = [];
+        let allServers = [];
+        let results = [];
+        let testing = false;
+        let stopped = false;
+        let bestServers = [];
+
+        // DOM 元素
+        const uploadZone = document.getElementById('uploadZone');
+        const csvInput = document.getElementById('csvInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const serverCount = document.getElementById('serverCount');
+        const testBtn = document.getElementById('testBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const resultsDiv = document.getElementById('results');
+        const resultsList = document.getElementById('resultsList');
+
+        // 拖放处理
+        uploadZone.addEventListener('click', () => csvInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+        csvInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        // 解析CSV文件
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                csvServers = parseCSV(content);
+                
+                fileName.textContent = file.name;
+                serverCount.textContent = csvServers.length;
+                fileInfo.classList.add('show');
+                
+                if (csvServers.length > 0) {
+                    testBtn.disabled = false;
+                }
+                
+                updateServerList();
+            };
+            reader.readAsText(file);
+        }
+
+        // 解析CSV内容
+        function parseCSV(content) {
+            const lines = content.split('\n');
+            const servers = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // 尝试多种分隔符
+                let parts = line.split(',');
+                if (parts.length < 3) {
+                    parts = line.split('\t');
+                }
+                
+                // 查找 host, ip, port 字段
+                let host = '';
+                let ip = '';
+                let port = '3478';
+                
+                for (let j = 0; j < parts.length; j++) {
+                    const p = parts[j].trim().replace(/"/g, '');
+                    if (p.includes('.stun.') || p.includes(':3478') || 
+                        (p.match(/\d+\.\d+\.\d+\.\d+/) && p.includes(':'))) {
+                        const [h, po] = p.split(':');
+                        host = h;
+                        port = po || '3478';
+                    } else if (p.match(/\d+\.\d+\.\d+\.\d+/)) {
+                        ip = p;
+                    } else if (!isNaN(p) && parseInt(p) > 0 && parseInt(p) < 65536) {
+                        port = p;
+                    }
+                }
+                
+                // 如果没有找到 host，尝试使用第一列
+                if (!host && parts[0]) {
+                    host = parts[0].trim().replace(/"/g, '');
+                }
+                
+                // 构建服务器地址
+                if (host.includes(':')) {
+                    servers.push({ addr: host, geo: '中国' });
+                } else if (host.match(/\d+\.\d+\.\d+\.\d+/) || 
+                           host.includes('.com') || host.includes('.cn')) {
+                    servers.push({ addr: `${host}:${port}`, geo: '中国' });
+                } else if (ip) {
+                    servers.push({ addr: `${ip}:${port}`, geo: '中国' });
+                }
+            }
+            
+            // 去重
+            const unique = [];
+            const seen = new Set();
+            for (const s of servers) {
+                if (!seen.has(s.addr)) {
+                    seen.add(s.addr);
+                    unique.push(s);
+                }
+            }
+            
+            return unique;
+        }
+
+        // 更新服务器列表
+        function updateServerList() {
+            allServers = [];
+            
+            if (document.getElementById('chkCsv').checked) {
+                allServers = allServers.concat(csvServers);
+            }
+            
+            if (document.getElementById('chkPublic').checked) {
+                allServers = allServers.concat(PUBLIC_SERVERS);
+            }
+            
+            // 去重
+            const unique = [];
+            const seen = new Set();
+            for (const s of allServers) {
+                if (!seen.has(s.addr)) {
+                    seen.add(s.addr);
+                    unique.push(s);
+                }
+            }
+            allServers = unique;
+        }
+
+        // 复选框变化时更新列表
+        document.getElementById('chkCsv').addEventListener('change', updateServerList);
+        document.getElementById('chkPublic').addEventListener('change', updateServerList);
+
+        // 测试单个服务器
+        async function testServer(server) {
+            return new Promise((resolve) => {
+                const startTime = performance.now();
+                let resolved = false;
+                let pc = null;
+
+                const timeout = setTimeout(() => {
+                    if (resolved) return;
+                    resolved = true;
+                    if (pc) { try { pc.close(); } catch(e) {} }
+                    resolve({ addr: server.addr, geo: server.geo, latency: null, status: "超时" });
+                }, 3000);
+
+                try {
+                    pc = new RTCPeerConnection({
+                        iceServers: [{ urls: "stun:" + server.addr }]
+                    });
+
+                    pc.onicecandidate = (event) => {
+                        if (resolved) return;
+                        if (event.candidate) {
+                            const c = event.candidate.candidate;
+                            if (c.includes("srflx") || c.includes("prflx")) {
+                                resolved = true;
+                                clearTimeout(timeout);
+                                if (pc) { try { pc.close(); } catch(e) {} }
+                                resolve({
+                                    addr: server.addr,
+                                    geo: server.geo,
+                                    latency: Math.round(performance.now() - startTime),
+                                    status: "可用"
+                                });
+                            }
+                        }
+                    };
+
+                    pc.onicegatheringstatechange = () => {
+                        if (resolved) return;
+                        if (pc && pc.iceGatheringState === "complete") {
+                            resolved = true;
+                            clearTimeout(timeout);
+                            if (pc) { try { pc.close(); } catch(e) {} }
+                            resolve({ addr: server.addr, geo: server.geo, latency: null, status: "无反射候选" });
+                        }
+                    };
+
+                    pc.createDataChannel("test");
+                    pc.createOffer().then(o => pc.setLocalDescription(o)).catch(() => {});
+                } catch (error) {
+                    if (resolved) return;
+                    resolved = true;
+                    clearTimeout(timeout);
+                    if (pc) { try { pc.close(); } catch(e) {} }
+                    resolve({ addr: server.addr, geo: server.geo, latency: null, status: "错误" });
+                }
+            });
+        }
+
+        // 添加结果行
+        function addResultRow(result) {
+            let latencyClass = "failed";
+            let latencyText = "失败";
+            
+            if (result.latency !== null) {
+                if (result.latency < 100) latencyClass = "excellent";
+                else if (result.latency < 200) latencyClass = "good";
+                else if (result.latency < 400) latencyClass = "average";
+                else latencyClass = "poor";
+                latencyText = result.latency + " ms";
+            }
+            
+            const row = document.createElement("div");
+            row.className = "result-item";
+            row.innerHTML = `
+                <div class="server-addr">${result.addr}</div>
+                <div class="latency ${latencyClass}">${latencyText}</div>
+                <div class="status">${result.status}</div>
+                <div class="geo-info">${result.geo}</div>
+            `;
+            
+            // 排序插入
+            const items = resultsList.children;
+            let inserted = false;
+            for (let i = 0; i < items.length; i++) {
+                const existing = results.find(r => r.addr === items[i].children[0].textContent);
+                if (!existing || existing.latency === null) continue;
+                if (result.latency !== null && result.latency < existing.latency) {
+                    resultsList.insertBefore(row, items[i]);
+                    inserted = true;
+                    break;
+                }
+            }
+            if (!inserted) resultsList.appendChild(row);
+        }
+
+        // 开始测试
+        async function startTest() {
+            if (testing) return;
+            
+            updateServerList();
+            
+            if (allServers.length === 0) {
+                alert("请先加载CSV文件或选择公共服务器！");
+                return;
+            }
+            
+            testing = true;
+            stopped = false;
+            results = [];
+            bestServers = [];
+            
+            testBtn.disabled = true;
+            stopBtn.disabled = false;
+            copyBtn.disabled = true;
+            exportBtn.disabled = true;
+            progressBar.style.display = "block";
+            resultsDiv.style.display = "block";
+            resultsList.innerHTML = "";
+            document.getElementById("summary").style.display = "none";
+            
+            const total = allServers.length;
+            let completed = 0;
+            const concurrency = 3;
+            
+            for (let i = 0; i < total; i += concurrency) {
+                if (stopped) break;
+                
+                const batch = allServers.slice(i, i + concurrency);
+                const batchResults = await Promise.all(batch.map(testServer));
+                
+                for (const result of batchResults) {
+                    results.push(result);
+                    addResultRow(result);
+                }
+                
+                completed += batch.length;
+                const percent = Math.round((completed / total) * 100);
+                progressFill.style.width = percent + "%";
+                progressFill.textContent = `${completed}/${total} (${percent}%)`;
+                
+                await new Promise(r => setTimeout(r, 50));
+            }
+            
+            finishTest();
+        }
+
+        // 停止测试
+        function stopTest() {
+            stopped = true;
+            stopBtn.disabled = true;
+        }
+
+        // 完成测试
+        function finishTest() {
+            testing = false;
+            testBtn.disabled = false;
+            stopBtn.disabled = true;
+            
+            const successful = results.filter(r => r.latency !== null);
+            const failed = results.filter(r => r.latency === null);
+            
+            successful.sort((a, b) => a.latency - b.latency);
+            bestServers = successful.slice(0, 20);
+            
+            document.getElementById("totalCount").textContent = results.length;
+            document.getElementById("successCount").textContent = successful.length;
+            document.getElementById("failedCount").textContent = failed.length;
+            
+            const avgLat = successful.length > 0 
+                ? Math.round(successful.reduce((s, r) => s + r.latency, 0) / successful.length)
+                : 0;
+            document.getElementById("avgLatency").textContent = avgLat + " ms";
+            
+            // 最佳服务器列表
+            const bestList = document.getElementById("bestServersList");
+            bestList.innerHTML = "";
+            bestServers.forEach(server => {
+                const badge = document.createElement("span");
+                badge.className = "best-server";
+                badge.textContent = `${server.addr} (${server.latency}ms)`;
+                badge.onclick = () => {
+                    navigator.clipboard.writeText(`stun:${server.addr}`);
+                    badge.textContent = "已复制!";
+                    setTimeout(() => {
+                        badge.textContent = `${server.addr} (${server.latency}ms)`;
+                    }, 1000);
+                };
+                bestList.appendChild(badge);
+            });
+            
+            // 生成配置
+            const iceServers = bestServers.slice(0, 10).map(s => ({ urls: `stun:${s.addr}` }));
+            iceServers.push(
+                { urls: "turn:numb.viagenie.ca", credential: "muazkh", username: "webrtc@live.com" },
+                { urls: "turn:openrelay.metered.ca:443", credential: "openrelayproject", username: "openrelayproject" }
+            );
+            
+            const config = { iceServers };
+            document.getElementById("configOutput").textContent = JSON.stringify(config, null, 2);
+            
+            document.getElementById("summary").style.display = "block";
+            copyBtn.disabled = false;
+            exportBtn.disabled = false;
+        }
+
+        // 清空结果
+        function clearResults() {
+            results = [];
+            bestServers = [];
+            resultsList.innerHTML = "";
+            document.getElementById("summary").style.display = "none";
+            progressBar.style.display = "none";
+            resultsDiv.style.display = "none";
+            copyBtn.disabled = true;
+        }
+
+        // 导出有效服务器列表（按延迟排序）
+        function exportValidServers() {
+            const successful = results.filter(r => r.latency !== null);
+            if (successful.length === 0) {
+                alert("没有可导出的有效服务器！");
+                return;
+            }
+            successful.sort((a, b) => a.latency - b.latency);
+
+            const lines = [];
+            lines.push("# 有效STUN服务器列表（按延迟排序）");
+            lines.push(`# 测试时间: ${new Date().toLocaleString()}`);
+            lines.push(`# 总有效服务器: ${successful.length}`);
+            lines.push(`# 平均延迟: ${Math.round(successful.reduce((s, r) => s + r.latency, 0) / successful.length)} ms`);
+            lines.push("");
+            lines.push("服务器地址,延迟(ms),地区");
+
+            for (const r of successful) {
+                lines.push(`${r.addr},${r.latency},${r.geo}`);
+            }
+
+            const text = lines.join('\n');
+            const blob = new Blob(["\uFEFF" + text], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `stun-servers-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 复制配置
+        function copyConfig() {
+            if (bestServers.length === 0) {
+                alert("请先运行测试！");
+                return;
+            }
+            
+            const iceServers = bestServers.slice(0, 10).map(s => ({ urls: `stun:${s.addr}` }));
+            iceServers.push(
+                { urls: "turn:numb.viagenie.ca", credential: "muazkh", username: "webrtc@live.com" },
+                { urls: "turn:openrelay.metered.ca:443", credential: "openrelayproject", username: "openrelayproject" }
+            );
+            
+            const config = { iceServers };
+            navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+            alert("配置已复制到剪贴板！");
+        }
+
+        // 页面加载完成
+        window.onload = () => {
+            updateServerList();
+        };
+    </script>
+</body>
+</html>

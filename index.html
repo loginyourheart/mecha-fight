@@ -691,6 +691,33 @@
             border-color: #cc4444;
         }
 
+        .log-toggle-btn {
+            position: fixed;
+            top: 10px;
+            right: 75px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            width: 45px;
+            height: 50px;
+            background: #334;
+            border: 2px solid #557;
+            border-radius: 4px;
+            color: #ff0;
+            cursor: pointer;
+            z-index: 300;
+            transition: all 0.3s ease;
+        }
+
+        .log-toggle-btn:hover {
+            background: #445;
+        }
+
+        .log-toggle-btn.active {
+            background: #0a0;
+            border-color: #0f0;
+            color: #000;
+        }
+
         .connection-status {
             position: fixed;
             top: 70px;
@@ -1323,8 +1350,7 @@
             <button class="mode-btn single" id="singleBtn">单人模式</button>
             <button class="mode-btn online" id="onlineBtn">联机对战</button>
         </div>
-
-        <div class="online-lobby" id="onlineLobby">
+    <div class="online-lobby" id="onlineLobby">
             <h2>互联网P2P联机</h2>
             
             <!-- 主内容区域 - 水平布局 -->
@@ -1606,6 +1632,7 @@
     </div>
 
     <button class="mute-btn" id="muteBtn">🔊</button>
+    <button class="log-toggle-btn" id="logToggleBtn" title="日志面板 (Backquote / F2)">📋</button>
 
     <div class="connection-status" id="connectionStatus">本地模式</div>
     
@@ -1614,15 +1641,18 @@
         <div>接收: <span id="recvCount">0</span></div>
     </div>
 
-    <div class="sync-log-panel" id="syncLogPanel" style="position: fixed; bottom: 10px; left: 10px; right: 10px; height: 150px; background: rgba(0,0,0,0.85); border: 2px solid #0a0; padding: 8px; font-family: monospace; font-size: 11px; z-index: 1000; display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <span style="color:#0f0;font-weight:bold;">📋 同步日志 [按 ` 隐藏]</span>
+    <div class="log-panel" id="logPanel" style="position: fixed; bottom: 10px; left: 10px; right: 10px; height: 150px; background: rgba(0,0,0,0.9); border: 2px solid #0a0; padding: 5px 8px; font-family: monospace; font-size: 11px; z-index: 1000; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <div style="display: flex; gap: 4px;">
+                <button id="logTabSync" onclick="switchLogTab('sync')" style="background:#0a0;color:#000;border:1px solid #0f0;padding:2px 10px;cursor:pointer;font-size:10px;font-weight:bold;">同步日志</button>
+                <button id="logTabCombat" onclick="switchLogTab('combat')" style="background:#333;color:#ff0;border:1px solid #f80;padding:2px 10px;cursor:pointer;font-size:10px;">战斗日志</button>
+            </div>
             <div>
-                <button id="copySyncLogBtn" style="background:#0a0;color:#000;border:1px solid #0f0;padding:2px 8px;cursor:pointer;font-size:10px;">复制日志</button>
-                <button id="clearSyncLogBtn" style="background:#333;color:#fff;border:1px solid #666;padding:2px 8px;cursor:pointer;font-size:10px;margin-left:5px;">清空</button>
+                <button id="copyLogBtn" onclick="copyLogContent()" style="background:#0a0;color:#000;border:1px solid #0f0;padding:2px 8px;cursor:pointer;font-size:10px;">复制</button>
+                <button id="clearLogBtn" onclick="clearLogContent()" style="background:#333;color:#fff;border:1px solid #666;padding:2px 8px;cursor:pointer;font-size:10px;margin-left:5px;">清空</button>
             </div>
         </div>
-        <div id="syncLogContent" style="color:#ddd;height:110px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;background:#111;padding:5px;border:1px solid #333;"></div>
+        <div id="logContent" style="color:#ddd;height:110px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;background:#111;padding:5px;border:1px solid #333;"></div>
     </div>
 
     <script>
@@ -1651,6 +1681,24 @@
         
         // 当前服务器配置（从 localStorage 加载或默认）
         let serverConfigs = JSON.parse(localStorage.getItem('mechaFight_servers') || JSON.stringify(DEFAULT_SERVERS));
+
+        // 🎯 ICE 配置 - 只需修改此处即可更新所有 Peer 的 ICE 服务器列表
+        const PEER_ICE_CONFIG = {
+            iceServers: [
+                { urls: 'stun:117.35.182.226:3478' },
+                { urls: 'stun:218.30.67.224:3478' },
+                { urls: 'stun:219.144.161.110:3478' },
+                { urls: 'stun:124.115.223.59:3478' },
+                { urls: 'stun:219.145.189.222:3478' },
+                { urls: 'stun:219.144.222.161:3478' },
+                { urls: 'stun:124.115.228.52:3478' },
+                { urls: 'stun:125.69.69.170:3478' },
+                { urls: 'stun:218.29.99.178:3478' },
+                { urls: 'stun:61.134.38.70:3478' },
+                { urls: 'turn:numb.viagenie.ca', credential: 'muazkh', username: 'webrtc@live.com' },
+                { urls: 'turn:openrelay.metered.ca:443', credential: 'openrelayproject', username: 'openrelayproject' }
+            ]
+        };
         
         // 暂停/继续游戏
         function togglePause() {
@@ -1843,6 +1891,29 @@
             return 0;
         }
 
+        // 🎯 获取当前选中的服务器配置
+        function getCurrentServer() {
+            const idx = getSelectedServerIndex();
+            currentServerIndex = idx;
+            return PEER_SERVERS[idx];
+        }
+
+        // 🎯 统一创建 Peer 的工厂函数 - 一处配置，三处复用
+        function createPeer(id, server) {
+            const options = {
+                host: server.host,
+                port: server.port,
+                path: server.path,
+                secure: server.secure,
+                debug: 2,
+                config: PEER_ICE_CONFIG
+            };
+            if (id) {
+                return new Peer(id, options);
+            }
+            return new Peer(options);
+        }
+
         // 设置服务器状态显示
         function setServerStatus(index, status, text) {
             const statusEl = document.getElementById(`server${index}Status`);
@@ -1970,7 +2041,7 @@
 
         const CANVAS_WIDTH = 800;
         const CANVAS_HEIGHT = 600;
-        const GRAVITY = 0.5;
+        const GRAVITY = 0.4;
         const GROUND_Y = CANVAS_HEIGHT - 128 - 30;
         
         let scale = 1;
@@ -2007,9 +2078,9 @@
         
         // 攻击/技能定义
         const MOVES = {
-            punch:    { type: 'melee',     windup: 6,  active: 3,  recovery: 18, range: 65,  damage: 6,  knockback: 15,  name: '拳'     },
-            kick:     { type: 'melee',     windup: 10, active: 5,  recovery: 25, range: 95,  damage: 9,  knockback: 25,  name: '腿'     },
-            fireball: { type: 'projectile', windup: 14, active: 0, recovery: 50, speed: 10,  damage: 10, knockback: 30,  name: '气功弹', size: 20 }
+            punch:    { type: 'melee',     windup: 12,  active: 6,  recovery: 36, range: 65,  damage: 6,  knockback: 15,  name: '拳'     },
+            kick:     { type: 'melee',     windup: 20, active: 10,  recovery: 50, range: 95,  damage: 9,  knockback: 25,  name: '腿'     },
+            fireball: { type: 'projectile', windup: 28, active: 0,  recovery: 100, speed: 10,  damage: 10, knockback: 30,  name: '气功弹', size: 20 }
         };
         
         // 角色定义 - 所有属性集中管理
@@ -2018,7 +2089,7 @@
                 id: 'mecha_red', name: '红甲斗士',
                 bodyColor: '#ff4444', detailColor: '#555555', eyeColor: '#000000', coreColor: '#ffff00',
                 defendOverlay: '#666666', defendHighlight: '#888888',
-                maxHealth: 100, moveSpeed: 3, jumpForce: 12, size: 128,
+                maxHealth: 100, moveSpeed: 3, jumpForce: 13, size: 128,
                 defenseReduction: 0.4, hitStun: 15,
                 moves: ['punch', 'kick', 'fireball'], hasBlock: true
             },
@@ -2026,7 +2097,7 @@
                 id: 'mecha_blue', name: '蓝甲斗士',
                 bodyColor: '#4444ff', detailColor: '#555555', eyeColor: '#000000', coreColor: '#ffff00',
                 defendOverlay: '#666666', defendHighlight: '#888888',
-                maxHealth: 100, moveSpeed: 3, jumpForce: 12, size: 128,
+                maxHealth: 100, moveSpeed: 3, jumpForce: 13, size: 128,
                 defenseReduction: 0.4, hitStun: 15,
                 moves: ['punch', 'kick', 'fireball'], hasBlock: true
             }
@@ -2154,7 +2225,7 @@
         let lastSendTime = 0;
         let lastPositionSendTime = 0;
         let lastStateSendTime = 0;
-        const SEND_INTERVAL_POSITION = 100;
+        const SEND_INTERVAL_POSITION = 16;
         const SEND_INTERVAL_STATE = 250;
         let isGameActive = false;
         let skipAttackHit = false;
@@ -2164,7 +2235,7 @@
         let messageCount = { sent: 0, received: 0, dropped: 0 };
         let lastMessageTime = 0;
         let lastPositionUpdate = { x: 0, y: 0 };
-        let positionThreshold = 5;
+        let positionThreshold = 1;
         let opponentTargetX = 0;
         let opponentTargetY = 0;
         let opponentDisplayX = 0;
@@ -2184,6 +2255,20 @@
 
         const debugLog = (msg) => {
             console.log('[DEBUG]', msg);
+        };
+
+        // 🎯 攻击日志 - 记录每次攻击的触发、命中、状态变迁
+        let combatLogs = [];
+        const MAX_COMBAT_LOGS = 200;
+        const combatLog = (player, action, detail) => {
+            const frame = gameFrame;
+            const time = new Date().toLocaleTimeString();
+            const me = myPlayerId || 0;
+            const role = isHost ? 'H' : 'C';
+            const entry = `[${role}|P${me}]${time} F${frame} ${player} ${action} ${detail}`;
+            combatLogs.push(entry);
+            console.log('[COMBAT]', entry);
+            if (combatLogs.length > MAX_COMBAT_LOGS) combatLogs.shift();
         };
         
         let lastLogP1Health = -1;
@@ -2237,34 +2322,81 @@
             debugLog('日志已导出');
         };
 
+        // 🎯 日志面板管理
+        let currentLogTab = 'sync';
+
+        function switchLogTab(tab) {
+            currentLogTab = tab;
+            document.getElementById('logTabSync').style.background = tab === 'sync' ? '#0a0' : '#333';
+            document.getElementById('logTabSync').style.color = tab === 'sync' ? '#000' : '#0f0';
+            document.getElementById('logTabSync').style.fontWeight = tab === 'sync' ? 'bold' : 'normal';
+            document.getElementById('logTabCombat').style.background = tab === 'combat' ? '#f80' : '#333';
+            document.getElementById('logTabCombat').style.color = tab === 'combat' ? '#000' : '#ff0';
+            document.getElementById('logTabCombat').style.fontWeight = tab === 'combat' ? 'bold' : 'normal';
+            updateLogContent();
+        }
+
+        function updateLogContent() {
+            const content = currentLogTab === 'sync' ? syncLog.slice(-30).join('\n') : combatLogs.slice(-30).join('\n');
+            document.getElementById('logContent').textContent = content;
+        }
+
+        function copyLogContent() {
+            const text = currentLogTab === 'sync' ? syncLog.join('\n') : combatLogs.join('\n');
+            const btn = document.getElementById('copyLogBtn');
+            navigator.clipboard.writeText(text).then(() => {
+                btn.textContent = '已复制!';
+                btn.style.background = '#080';
+                debugLog('日志已复制到剪贴板');
+                setTimeout(() => { btn.textContent = '复制'; btn.style.background = '#0a0'; }, 1500);
+            }).catch(() => {
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${currentLogTab}-${isHost ? 'host' : 'client'}-${new Date().toISOString().replace(/[:.]/g, '-')}.log`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                btn.textContent = '已导出!';
+                btn.style.background = '#080';
+                setTimeout(() => { btn.textContent = '复制'; btn.style.background = '#0a0'; }, 1500);
+            });
+        }
+
+        function clearLogContent() {
+            if (currentLogTab === 'sync') syncLog = [];
+            else combatLogs = [];
+            document.getElementById('logContent').textContent = '';
+        }
+
+        // 🎯 统一屏幕切换系统 - 所有 UI 面板的显隐都通过此函数
+        const SCREEN_NAMES = [
+            'onlineLobby', 'waitingRoom', 'titleScreen',
+            'uiOverlay', 'gameControls', 'gameOver'
+        ];
+
+        function showScreen(screenName) {
+            const modeSelect = document.getElementById('modeSelect');
+            modeSelect.style.display = screenName === 'modeSelect' ? 'flex' : 'none';
+            for (const name of SCREEN_NAMES) {
+                document.getElementById(name).classList.toggle('show', name === screenName);
+            }
+        }
+
         function showModeSelect() {
-            document.getElementById('modeSelect').style.display = 'flex';
-            document.getElementById('onlineLobby').classList.remove('show');
-            document.getElementById('waitingRoom').classList.remove('show');
-            document.getElementById('titleScreen').classList.remove('show');
-            document.getElementById('uiOverlay').classList.remove('show');
-            document.getElementById('gameControls').classList.remove('show');
-            document.getElementById('gameOver').classList.remove('show');
+            showScreen('modeSelect');
         }
 
         function showOnlineLobby() {
-            document.getElementById('modeSelect').style.display = 'none';
-            document.getElementById('titleScreen').classList.remove('show');
-            document.getElementById('waitingRoom').classList.remove('show');
-            document.getElementById('gameOver').classList.remove('show');
-            document.getElementById('uiOverlay').classList.remove('show');
-            document.getElementById('gameControls').classList.remove('show');
-            document.getElementById('onlineLobby').classList.add('show');
+            showScreen('onlineLobby');
             
-            // 默认显示不可用面板，隐藏房间列表
             document.getElementById('roomListPanel').style.display = 'none';
             document.getElementById('roomListUnavailablePanel').style.display = 'flex';
             document.querySelector('.unavailable-message').innerHTML = '<p>🔍 正在检测服务器...</p>';
             
-            // 重置房间列表功能标志
             roomDiscoveryEnabled = false;
-            
-            // 检测服务器是否支持 listAllPeers
             testServerDiscovery();
             
             debugLog('已进入联机大厅');
@@ -2390,11 +2522,8 @@
         }
 
         function showWaitingRoom(roomName) {
-            // 保存房间名称
             currentRoomName = roomName;
-            
-            document.getElementById('onlineLobby').classList.remove('show');
-            document.getElementById('waitingRoom').classList.add('show');
+            showScreen('waitingRoom');
             document.getElementById('displayRoomName').textContent = roomName;
             
             if (isHost) {
@@ -2441,20 +2570,13 @@
         }
 
         function showTitleScreen() {
-            document.getElementById('modeSelect').style.display = 'none';
-            document.getElementById('onlineLobby').classList.remove('show');
-            document.getElementById('waitingRoom').classList.remove('show');
-            document.getElementById('titleScreen').classList.add('show');
-            document.getElementById('uiOverlay').classList.remove('show');
-            document.getElementById('gameControls').classList.remove('show');
-            document.getElementById('gameOver').classList.remove('show');
+            showScreen('titleScreen');
             playTitleMusic();
         }
 
         function startSingleGame() {
             gameMode = 'single';
-            document.getElementById('modeSelect').style.display = 'none';
-            document.getElementById('titleScreen').classList.add('show');
+            showScreen('titleScreen');
             document.getElementById('connectionStatus').textContent = '本地模式';
             document.getElementById('connectionStatus').className = 'connection-status';
             playTitleMusic();
@@ -2462,16 +2584,14 @@
 
         function startOnlineGame() {
             gameMode = 'online';
-            document.getElementById('titleScreen').classList.add('show');
+            showScreen('titleScreen');
             document.getElementById('connectionStatus').textContent = '联机模式';
             document.getElementById('connectionStatus').className = 'connection-status connected';
             playTitleMusic();
         }
 
         function showGame() {
-            document.getElementById('titleScreen').classList.remove('show');
-            document.getElementById('waitingRoom').classList.remove('show');
-            document.getElementById('uiOverlay').classList.add('show');
+            showScreen('uiOverlay');
             document.getElementById('gameControls').classList.add('show');
             updateControlsDisplay();
 
@@ -2710,10 +2830,7 @@
             // 从 peer ID 解码原始房间名
             currentRoomName = decodePeerId(targetPeerId);
             
-            // 使用用户选择的服务器
-            const selectedIndex = getSelectedServerIndex();
-            currentServerIndex = selectedIndex;
-            const server = PEER_SERVERS[currentServerIndex];
+            const server = getCurrentServer();
             
             debugLog(`正在连接到房间: ${targetPeerId}，服务器: ${server.host}:${server.port}...`);
             
@@ -2721,29 +2838,14 @@
                 debugLog(`⚠️ 使用备用服务器: ${server.host}:${server.port}`);
             }
             
-            // 更新连接状态
             updateConnectionStatus(false, 'connecting', `正在连接到 ${server.host}...`);
             
             if (peer) {
                 peer.destroy();
             }
             
-            // 创建新的 peer 用于连接
             const myPeerId = 'mf_' + Math.random().toString(36).substring(2, 6);
-            peer = new Peer(myPeerId, {
-                host: server.host,
-                port: server.port,
-                path: server.path,
-                secure: server.secure,
-                debug: 2,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' }
-                    ]
-                }
-            });
+            peer = createPeer(myPeerId, server);
             
             peer.on('open', (id) => {
                 debugLog(`连接成功! 正在连接至房间: ${targetPeerId}...`);
@@ -2843,39 +2945,17 @@
             // 保存房间名称
             currentRoomName = roomName;
             
-            // 使用用户选择的服务器
-            const selectedIndex = getSelectedServerIndex();
-            currentServerIndex = selectedIndex;
-            
-            // 将房间名称转换为有效的Peer ID
             const peerId = generatePeerId(roomName);
-            const server = PEER_SERVERS[currentServerIndex];
+            const server = getCurrentServer();
             debugLog(`正在初始化Peer，房间名称: ${roomName}，ID: ${peerId}，服务器: ${server.host}:${server.port}...`);
 
             if (currentServerIndex > 0) {
                 debugLog(`⚠️ 使用备用服务器: ${server.host}:${server.port}`);
             }
             
-            // 更新连接状态
             updateConnectionStatus(true, 'connecting', `正在连接到 ${server.host}...`);
 
-            peer = new Peer(peerId, {
-                host: server.host,
-                port: server.port,
-                path: server.path,
-                secure: server.secure,
-                debug: 2,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'turn:numb.viagenie.ca', credential: 'muazkh', username: 'webrtc@live.com' },
-                        { urls: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo' },
-                        { urls: 'turn:turnserver.openvpn.net:3478', credential: 'openvpn', username: 'openvpn' }
-                    ]
-                }
-            });
+            peer = createPeer(peerId, server);
 
             peer.on('open', (id) => {
                 debugLog(`Peer连接成功! ID: ${id}`);
@@ -2961,45 +3041,23 @@
             currentRoomName = roomName;
             
             // 使用用户选择的服务器
-            const selectedIndex = getSelectedServerIndex();
-            currentServerIndex = selectedIndex;
-            
-            // 将房间名称转换为有效的Peer ID
             const peerId = generatePeerId(roomName.trim());
-            const server = PEER_SERVERS[currentServerIndex];
+            const server = getCurrentServer();
             debugLog(`正在连接到房间: ${roomName}，ID: ${peerId}，服务器: ${server.host}:${server.port}...`);
 
             if (currentServerIndex > 0) {
                 debugLog(`⚠️ 使用备用服务器: ${server.host}:${server.port}`);
             }
             
-            // 更新连接状态
             updateConnectionStatus(false, 'connecting', `正在连接到 ${server.host}...`);
             
-            // 停止房间发现
             stopRoomDiscovery();
 
             if (peer) {
                 peer.destroy();
             }
 
-            peer = new Peer({ 
-                host: server.host,
-                port: server.port,
-                path: server.path,
-                secure: server.secure,
-                debug: 2,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'turn:numb.viagenie.ca', credential: 'muazkh', username: 'webrtc@live.com' },
-                        { urls: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo' },
-                        { urls: 'turn:turnserver.openvpn.net:3478', credential: 'openvpn', username: 'openvpn' }
-                    ]
-                }
-            });
+            peer = createPeer(null, server);
 
             const connectCallback = (id) => {
                 debugLog(`连接成功! 正在连接至房间: ${roomName}...`);
@@ -3110,155 +3168,131 @@
             });
         }
 
+        // 🎯 共享消息处理器 - host/client 的公共数据处理逻辑
+
+        function handleOpponentAction(data, oppNum) {
+            debugLog(`[RECV] action_start: ${data.actionType}`);
+            if (gameState && gameState.mechas[oppNum]) {
+                const opp = gameState.mechas[oppNum];
+                const config = MOVES[data.actionType];
+                opp.attackType = data.actionType;
+                opp.state = 'attackWindup';
+                opp.attackWindup = config ? config.windup : 30;
+                opp.attackActive = config && config.type !== 'projectile' ? config.active : 0;
+                opp.attackRecovery = config ? config.recovery : 0;
+                opp.facingRight = data.facingRight;
+                combatLog('opp', 'RECV_ACTION', `${config?.name || data.actionType} opp=${oppNum}`);
+            }
+        }
+
+        function handleOpponentDefense(data, oppNum) {
+            debugLog(`[RECV] defense_update: ${data.isDefending}`);
+            if (gameState && gameState.mechas[oppNum]) {
+                gameState.mechas[oppNum].isDefending = data.isDefending;
+            }
+        }
+
+        function handleProjectileCreate(data, oppNum) {
+            debugLog(`[RECV] projectile_create: ${data.projectileType}`);
+            const cfg = MOVES[data.projectileType] || { size: 20, damage: 10, knockback: 30 };
+            const isSuper = !!data.isSuper;
+            fireballs.push({ 
+                x: data.x, y: data.y, vx: data.vx, owner: oppNum,
+                size: isSuper ? cfg.size * 2 : cfg.size,
+                damage: isSuper ? cfg.damage * 4 : cfg.damage,
+                knockback: cfg.knockback, isSuper
+            });
+        }
+
+        function onRematchMessage(data) {
+            rematchState.oppReady = true;
+            const rBtn = document.getElementById('rematchBtn');
+
+            if (rematchState.myReady) {
+                if (isHost) {
+                    rBtn.textContent = '双方已确认，开始...';
+                    rBtn.disabled = true;
+                    startOnlineRematch();
+                } else {
+                    rBtn.textContent = '双方已确认，等待主机开始...';
+                    rBtn.disabled = true;
+                    sendData({ type: 'rematch_accept' });
+                }
+            } else {
+                rBtn.textContent = '对手请求再战！点击接受';
+                rBtn.disabled = false;
+                rBtn.onclick = acceptRematch;
+            }
+        }
+
         function handlePeerData(data) {
             messageCount.received++;
             debugLog(`处理数据: ${data.type}`);
+            
             if (isHost) {
-                // ========== 主机处理逻辑 ==========
-                const myNum = 'player1';
                 const oppNum = 'player2';
                 switch(data.type) {
                     case 'ready':
-                        debugLog('收到对手ready信号');
-                        break;
-
                     case 'game_state_sync':
+                    case 'game_over':
                         break;
-
                     case 'input':
                         opponentData = data;
                         break;
-                        
                     case 'position':
-                        // 主机只同步客机的位置、朝向、气值，绝不信任客机的血量！血量由主机决定
                         if (!opponentData) opponentData = {};
                         opponentData.x = data.x;
                         opponentData.y = data.y;
                         opponentData.facingRight = data.facingRight;
                         opponentData.qi = data.qi;
                         opponentData.isCharging = data.isCharging;
-                        // 更新客机的位置、朝向、气值
                         if (gameState && gameState.mechas[oppNum]) {
                             gameState.mechas[oppNum].x = data.x;
                             gameState.mechas[oppNum].y = data.y;
                             gameState.mechas[oppNum].facingRight = data.facingRight;
                             gameState.mechas[oppNum].isCharging = data.isCharging;
                             gameState.mechas[oppNum].qi = data.qi;
-                            // 注意：绝不更新 health！血量由主机权威决定！
                         }
                         break;
-                    
-                    case 'defense_update':
-                        debugLog(`[RECV] defense_update: ${data.isDefending}`);
-                        if (gameState && gameState.mechas[oppNum]) {
-                            gameState.mechas[oppNum].isDefending = data.isDefending;
-                        }
-                        break;
-
-                    case 'action_start':
-                        debugLog(`[RECV] action_start: ${data.actionType}`);
-                        if (gameState && gameState.mechas[oppNum]) {
-                            const opp = gameState.mechas[oppNum];
-                            const config = MOVES[data.actionType];
-                            opp.attackType = data.actionType;
-                            opp.state = 'attackWindup';
-                            opp.attackWindup = config ? config.windup : 30;
-                            opp.attackActive = config && config.type !== 'projectile' ? config.active : 0;
-                            opp.attackRecovery = config ? config.recovery : 0;
-                            opp.facingRight = data.facingRight;
-                        }
-                        break;
-
-                    case 'projectile_create':
-                        debugLog(`[RECV] projectile_create: ${data.projectileType}`);
-                        const baseCfg = MOVES[data.projectileType] || { size: 20, damage: 10, knockback: 30 };
-                        const isSuper = !!data.isSuper;
-                        fireballs.push({ 
-                            x: data.x, 
-                            y: data.y, 
-                            vx: data.vx, 
-                            owner: oppNum,
-                            size: isSuper ? baseCfg.size * 2 : baseCfg.size,
-                            damage: isSuper ? baseCfg.damage * 4 : baseCfg.damage,
-                            knockback: baseCfg.knockback,
-                            isSuper: isSuper
-                        });
-                        break;
-
-                    case 'game_over':
-                        debugLog(`收到游戏结束信号，赢家: ${data.winner}`);
-                        break;
-
+                    case 'action_start': handleOpponentAction(data, oppNum); break;
+                    case 'defense_update': handleOpponentDefense(data, oppNum); break;
+                    case 'projectile_create': handleProjectileCreate(data, oppNum); break;
                     case 'rematch_request':
-                        rematchState.oppReady = true;
-                        if (rematchState.myReady) {
-                            const rBtn = document.getElementById('rematchBtn');
-                            rBtn.textContent = '双方已确认，开始...';
-                            rBtn.disabled = true;
-                            if (isHost) startOnlineRematch();
-                        } else {
-                            const rBtn = document.getElementById('rematchBtn');
-                            rBtn.textContent = '对手请求再战！点击接受';
-                            rBtn.disabled = false;
-                            rBtn.onclick = acceptRematch;
-                        }
-                        break;
-
                     case 'rematch_accept':
-                        rematchState.oppReady = true;
-                        if (rematchState.myReady) {
-                            const rBtn = document.getElementById('rematchBtn');
-                            rBtn.textContent = '双方已确认，开始...';
-                            rBtn.disabled = true;
-                            if (isHost) startOnlineRematch();
-                        } else {
-                            const rBtn = document.getElementById('rematchBtn');
-                            rBtn.textContent = '对手请求再战！点击接受';
-                            rBtn.disabled = false;
-                            rBtn.onclick = acceptRematch;
-                        }
+                        onRematchMessage(data);
                         break;
                 }
             } else {
-                // ========== 客机处理逻辑 ==========
-                const myNum = 'player2';
                 const oppNum = 'player1';
                 switch(data.type) {
                     case 'ready':
                         debugLog('收到对手ready信号');
                         connection.send({ type: 'ready' });
                         break;
-
                     case 'game_state_sync':
                         debugLog('收到游戏状态同步!');
-                        
                         if (data.isStart) {
                             debugLog('收到游戏开始信号!');
                             if (data.playerId) {
-                                const oldPlayerId = myPlayerId;
                                 myPlayerId = data.playerId === 1 ? 2 : 1;
                                 debugLog(`本机被分配为: 玩家${myPlayerId} (原host是玩家${data.playerId})`);
                             }
-                            
                             if (!gameState || gameState.gameStatus !== 'playing') {
                                 debugLog('初始化本地游戏状态...');
-                                const p1Char = data.player1Char || DEFAULT_CHAR_SELECTION.player1;
-                                const p2Char = data.player2Char || DEFAULT_CHAR_SELECTION.player2;
-                                initGameState(p1Char, p2Char);
+                                initGameState(
+                                    data.player1Char || DEFAULT_CHAR_SELECTION.player1,
+                                    data.player2Char || DEFAULT_CHAR_SELECTION.player2
+                                );
                                 showGame();
                                 restartGame();
                             }
-                            
                             isGameActive = true;
                             syncLogEntry('game_start', `playerId=${myPlayerId}`);
-                            debugLog('游戏已开始! isGameActive=true');
                         }
                         break;
-
                     case 'input':
                         opponentData = data;
                         break;
-                        
                     case 'position':
                         if (!opponentData) opponentData = {};
                         opponentData.x = data.x;
@@ -3267,67 +3301,17 @@
                         opponentData.qi = data.qi;
                         opponentData.isCharging = data.isCharging;
                         break;
-                    
                     case 'state_update':
-                        // 客机完全信任主机血量！只同步血量，气值各自本地控制（格斗游戏模式）
                         if (data.p1Health !== undefined) gameState.mechas.player1.health = data.p1Health;
                         if (data.p2Health !== undefined) gameState.mechas.player2.health = data.p2Health;
                         updateHealthUI();
                         updateQiUI();
                         syncLogEntry('sync_state', 'rcv');
                         break;
-                        
-                    case 'state':
-                        if (!opponentData) opponentData = {};
-                        opponentData.health = data.health;
-                        opponentData.state = data.state;
-                        opponentData.isDefending = data.isDefending;
-                        opponentData.attackType = data.attackType;
-                        opponentData.hitStun = data.hitStun;
-                        break;
-
-                    case 'action_start':
-                        debugLog(`[RECV] action_start: ${data.actionType}`);
-                        if (gameState && gameState.mechas[oppNum]) {
-                            const opp = gameState.mechas[oppNum];
-                            const config = MOVES[data.actionType];
-                            opp.attackType = data.actionType;
-                            opp.state = 'attackWindup';
-                            opp.attackWindup = config ? config.windup : 30;
-                            opp.attackActive = config && config.type !== 'projectile' ? config.active : 0;
-                            opp.attackRecovery = config ? config.recovery : 0;
-                            opp.facingRight = data.facingRight;
-                        }
-                        break;
-
-                    case 'defense_update':
-                        debugLog(`[RECV] defense_update: ${data.isDefending}`);
-                        if (gameState && gameState.mechas[oppNum]) {
-                            gameState.mechas[oppNum].isDefending = data.isDefending;
-                        }
-                        break;
-
-                    case 'projectile_create':
-                        debugLog(`[RECV] projectile_create: ${data.projectileType}`);
-                        const projCfg = MOVES[data.projectileType] || { size: 20, damage: 10, knockback: 30 };
-                        const projSuper = !!data.isSuper;
-                        fireballs.push({ 
-                            x: data.x, 
-                            y: data.y, 
-                            vx: data.vx, 
-                            owner: oppNum,
-                            size: projSuper ? projCfg.size * 2 : projCfg.size,
-                            damage: projSuper ? projCfg.damage * 4 : projCfg.damage,
-                            knockback: projCfg.knockback,
-                            isSuper: projSuper
-                        });
-                        break;
-
                     case 'game_over':
                         debugLog(`收到游戏结束信号，赢家: ${data.winner}`);
                         gameState.winner = data.winner === 1 ? 'player1' : 'player2';
                         gameState.gameStatus = 'gameOver';
-                        // 同步最终血量（气值各自本地控制）
                         if (data.p1Health !== undefined) gameState.mechas.player1.health = data.p1Health;
                         if (data.p2Health !== undefined) gameState.mechas.player2.health = data.p2Health;
                         updateHealthUI();
@@ -3335,7 +3319,6 @@
                         syncLogEntry('game_over', `winner=${data.winner}`);
                         showGameOver();
                         break;
-                        
                     case 'action_hit':
                         debugLog(`[RECV] action_hit: ${data.actionType} -> ${data.target}`);
                         if (gameState) {
@@ -3344,15 +3327,8 @@
                                 const attackerNum = myPlayerId === 1 ? 'player1' : 'player2';
                                 const attacker = gameState.mechas[attackerNum];
                                 const hitChar = getChar(hitTarget.characterId);
-                                
-                                // 直接使用同步来的血量值
-                                if (data.myHealth !== undefined && attacker) {
-                                    attacker.health = data.myHealth;
-                                }
-                                if (data.oppHealth !== undefined) {
-                                    hitTarget.health = data.oppHealth;
-                                }
-                                
+                                if (data.myHealth !== undefined && attacker) attacker.health = data.myHealth;
+                                if (data.oppHealth !== undefined) hitTarget.health = data.oppHealth;
                                 hitTarget.state = 'hit';
                                 hitTarget.hitStun = hitChar.hitStun;
                                 hitTarget.flashTimer = 48;
@@ -3360,9 +3336,7 @@
                                 triggerScreenShake((MOVES[data.actionType]?.damage || 10) * 0.3);
                                 playHitSound();
                                 updateHealthUI();
-                                
                                 syncLogEntry('hit_rcv', `${data.actionType}->${data.target}`);
-                                
                                 if (hitTarget.health <= 0) {
                                     gameState.winner = data.target;
                                     gameState.gameStatus = 'gameOver';
@@ -3371,29 +3345,12 @@
                             }
                         }
                         break;
-
+                    case 'action_start': handleOpponentAction(data, oppNum); break;
+                    case 'defense_update': handleOpponentDefense(data, oppNum); break;
+                    case 'projectile_create': handleProjectileCreate(data, oppNum); break;
                     case 'rematch_request':
-                        rematchState.oppReady = true;
-                        if (rematchState.myReady) {
-                            const rBtn = document.getElementById('rematchBtn');
-                            rBtn.textContent = '双方已确认，等待主机开始...';
-                            rBtn.disabled = true;
-                            sendData({ type: 'rematch_accept' });
-                        } else {
-                            const rBtn = document.getElementById('rematchBtn');
-                            rBtn.textContent = '对手请求再战！点击接受';
-                            rBtn.disabled = false;
-                            rBtn.onclick = acceptRematch;
-                        }
-                        break;
-
                     case 'rematch_accept':
-                        rematchState.oppReady = true;
-                        if (rematchState.myReady) {
-                            const rBtn = document.getElementById('rematchBtn');
-                            rBtn.textContent = '双方已确认，等待主机开始...';
-                            rBtn.disabled = true;
-                        }
+                        onRematchMessage(data);
                         break;
                 }
             }
@@ -3515,19 +3472,19 @@
             else playTitleMusic();
         }
 
-        function initGameState(p1CharId, p2CharId) {
-            const c1Id = p1CharId || DEFAULT_CHAR_SELECTION.player1;
-            const c2Id = p2CharId || DEFAULT_CHAR_SELECTION.player2;
-            const c1 = getChar(c1Id);
-            const c2 = getChar(c2Id);
-            gameState = {
-                mechas: {
-                    player1: { x: 100, y: GROUND_Y, health: c1.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: true, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c1.id, isCharging: false, damageHistory: [], isDowned: false, downTimer: 0, invincibilityTimer: 0 },
-                    player2: { x: 550, y: GROUND_Y, health: c2.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: false, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c2.id, isCharging: false, damageHistory: [], isDowned: false, downTimer: 0, invincibilityTimer: 0 }
-                },
-                gameStatus: 'playing',
-                winner: null
+        // 🎯 机甲状态工厂 - 消除 initGameState / restartGame 中的重复初始化
+        function createMechaState(char, x, facingRight) {
+            return {
+                x, y: GROUND_Y, health: char.maxHealth, qi: 0, state: 'idle',
+                attackType: null, isDefending: false, attackWindup: 0, attackActive: 0,
+                attackRecovery: 0, hitStun: 0, facingRight, velocityY: 0,
+                isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: char.id,
+                isCharging: false, damageHistory: [], isDowned: false, downTimer: 0,
+                invincibilityTimer: 0
             };
+        }
+
+        function resetGameState() {
             fireballs = [];
             particles = [];
             screenShake = { x: 0, y: 0, intensity: 0 };
@@ -3542,21 +3499,32 @@
             lastLogP2Qi = -1;
         }
 
+        function initGameState(p1CharId, p2CharId) {
+            const c1 = getChar(p1CharId || DEFAULT_CHAR_SELECTION.player1);
+            const c2 = getChar(p2CharId || DEFAULT_CHAR_SELECTION.player2);
+            gameState = {
+                mechas: {
+                    player1: createMechaState(c1, 100, true),
+                    player2: createMechaState(c2, 550, false)
+                },
+                gameStatus: 'playing',
+                winner: null
+            };
+            resetGameState();
+        }
+
         function restartGame() {
             if (!gameState) {
                 initGameState();
                 return;
             }
-            const c1Id = gameState.mechas.player1.characterId;
-            const c2Id = gameState.mechas.player2.characterId;
-            const c1 = getChar(c1Id);
-            const c2 = getChar(c2Id);
-            gameState.mechas.player1 = { x: 100, y: GROUND_Y, health: c1.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: true, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c1.id, isCharging: false, damageHistory: [], isDowned: false, downTimer: 0, invincibilityTimer: 0 };
-            gameState.mechas.player2 = { x: 550, y: GROUND_Y, health: c2.maxHealth, qi: 0, state: 'idle', attackType: null, isDefending: false, attackWindup: 0, attackActive: 0, attackRecovery: 0, hitStun: 0, facingRight: false, velocityY: 0, isJumping: false, knockbackVelX: 0, flashTimer: 0, characterId: c2.id, isCharging: false, damageHistory: [], isDowned: false, downTimer: 0, invincibilityTimer: 0 };
+            const c1 = getChar(gameState.mechas.player1.characterId);
+            const c2 = getChar(gameState.mechas.player2.characterId);
+            gameState.mechas.player1 = createMechaState(c1, 100, true);
+            gameState.mechas.player2 = createMechaState(c2, 550, false);
             gameState.gameStatus = 'playing';
             gameState.winner = null;
-            fireballs = [];
-            particles = [];
+            resetGameState();
             opponentData = null;
             opponentDisplayX = 550;
             opponentDisplayY = GROUND_Y;
@@ -3565,15 +3533,6 @@
             document.getElementById('gameOver').classList.remove('show');
             updateHealthUI();
             updateQiUI();
-            lastQiValue = 0;
-            lastQiSendTime = 0;
-            lastQiSent = 0;
-            lastHealthValue = { player1: -1, player2: -1 };
-            lastHealthSendTime = 0;
-            lastLogP1Health = -1;
-            lastLogP2Health = -1;
-            lastLogP1Qi = -1;
-            lastLogP2Qi = -1;
             playBattleMusic();
         }
 
@@ -3595,7 +3554,6 @@
             const btn = document.getElementById('rematchBtn');
             btn.textContent = isHost ? '双方已确认，开始...' : '已确认，等待主机开始...';
             btn.disabled = true;
-            if (isHost) startOnlineRematch();
         }
 
         function startOnlineRematch() {
@@ -3646,8 +3604,8 @@
             ctx.translate(x + size/2, y + size/2);
             if (!facingRight) ctx.scale(-1, 1);
 
-            if (isWindup) ctx.translate(-4 + Math.sin(Date.now() / 80) * 1, 0);
-            if (isRecovery) ctx.translate(2 + Math.sin(Date.now() / 60) * 0.5, 0);
+            if (isWindup) ctx.translate(-4, 0);
+            if (isRecovery) ctx.translate(2, 0);
 
             if (flashTimer > 0 && (flashTimer % 6 < 2 || flashTimer % 6 >= 4)) color = '#ffffff';
             if (isWindup) { const b = Math.min(255, parseInt(bodyColor.slice(1,3), 16) + 30); color = '#' + b.toString(16).padStart(2,'0') + bodyColor.slice(3); }
@@ -3677,7 +3635,7 @@
                     if (cfg && cfg.recovery > 0) {
                         const ratio = recoveryRemaining / cfg.recovery;
                         limbExt = 0;
-                        limbLen = (attackType === 'punch' ? 50 : 60) * (1 - ratio);
+                        limbLen = (attackType === 'punch' ? 50 : 60) * ratio;
                     } else {
                         limbLen = 0;
                     }
@@ -3824,6 +3782,21 @@
             bgOffset3 = (bgOffset3 + 0.6) % (CANVAS_WIDTH * 2);
         }
 
+        // 🎯 绘制日志 - 追踪攻击动画在canvas上的渲染
+        let lastDrawState = {};
+        const logDrawAttack = (playerId, state, attackType) => {
+            const key = `p${playerId}`;
+            const prev = lastDrawState[key];
+            if (state === 'attackWindup' && prev !== 'attackWindup') {
+                combatLog('self', 'DRAW_WINDUP', `P${playerId} ${attackType}`);
+            } else if (state === 'attack' && prev !== 'attack') {
+                combatLog('self', 'DRAW_ACTIVE', `P${playerId} ${attackType}`);
+            } else if (state === 'attackRecovery' && prev !== 'attackRecovery') {
+                combatLog('self', 'DRAW_RECOVERY', `P${playerId} ${attackType}`);
+            }
+            lastDrawState[key] = state;
+        };
+
         function draw() {
             updateScreenShake();
             ctx.save();
@@ -3841,6 +3814,8 @@
                 
                 drawPixelMecha(p1.x, p1.y, c1, p1.state, p1.attackType, p1.facingRight, p1.isDefending, p1.isJumping, p1.flashTimer, p1.attackWindup, p1.attackRecovery);
                 drawPixelMecha(p2.x, p2.y, c2, p2.state, p2.attackType, p2.facingRight, p2.isDefending, p2.isJumping, p2.flashTimer, p2.attackWindup, p2.attackRecovery);
+                logDrawAttack(1, p1.state, p1.attackType);
+                logDrawAttack(2, p2.state, p2.attackType);
                 fireballs.forEach(f => drawFireball(f));
                 particles.forEach(p => {
                     ctx.globalAlpha = p.life / p.maxLife;
@@ -3862,8 +3837,9 @@
                     document.getElementById('sentCount').textContent = messageCount.sent;
                     document.getElementById('recvCount').textContent = messageCount.received;
                     
-                    document.getElementById('syncLogPanel').style.display = 'block';
-                    document.getElementById('syncLogContent').textContent = syncLog.slice(-30).join('\n');
+                    if (document.getElementById('logPanel').style.display === 'block') {
+                        updateLogContent();
+                    }
                     
                     const myCharName = getChar(gameState.mechas[myPlayerId === 1 ? 'player1' : 'player2'].characterId).name;
                     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -3873,7 +3849,6 @@
                     ctx.fillText((isHost ? 'HOST' : 'CLIENT') + ' [' + myCharName + ']', CANVAS_WIDTH - 90, CANVAS_HEIGHT - 12);
                 } else {
                     document.getElementById('networkStats').style.display = 'none';
-                    document.getElementById('syncLogPanel').style.display = 'none';
                 }
             }
             ctx.restore();
@@ -3942,6 +3917,7 @@
                     my.attackType = moveId;
                     my.isDefending = false;
                     my.state = 'attackWindup';
+                    combatLog('self', 'INPUT', `${moveCfg.name} windup=${moveCfg.windup}`);
                 }
             }
         }
@@ -3949,7 +3925,9 @@
         function stepMeleeAnimate(my, moveCfg) {
             my.state = 'attack';
             my.attackActive = moveCfg.active;
+            my.attackWindup = 0;
             playAttackSound();
+            combatLog('self', 'ANIMATE', `${moveCfg.name} active=${moveCfg.active}`);
         }
 
         function handleDownedState(mecha) {
@@ -4246,9 +4224,11 @@
 
 
                     if (my.attackWindup === 1 && my.hitStun === 0) {
-                        const moveCfg = MOVES[my.attackType];
-                        if (moveCfg) {
-                            if (moveCfg.type === 'projectile') {
+                            const moveCfg = MOVES[my.attackType];
+                            if (moveCfg) {
+                                combatLog('self', 'WINDUP_END', `${moveCfg.name} -> 判定阶段`);
+                                if (moveCfg.type === 'projectile') {
+                                my.attackWindup = 0;
                                 my.attackRecovery = moveCfg.recovery;
                                 const isSuper = my.qi >= 100;
                                 if (isSuper) {
@@ -4299,6 +4279,7 @@
                         const oppMoveCfg = MOVES[opp.attackType];
                         if (oppMoveCfg) {
                             if (oppMoveCfg.type === 'projectile') {
+                                opp.attackWindup = 0;
                                 opp.attackRecovery = oppMoveCfg.recovery;
                                 const oppIsSuper = opp.qi >= 100;
                                 if (oppIsSuper) {
@@ -4387,6 +4368,7 @@
                                     my.attackType = null;
                                     return;
                                 }
+                                my.attackWindup = 0;
                                 my.attackRecovery = moveCfg.recovery;
                                 const isSuper = my.qi >= 100;
                                 // 本地临时减气做视觉效果，等主机同步修正
@@ -4441,7 +4423,7 @@
                     if (opponentData.health !== undefined) updateHealthUI();
                     if (opponentData.qi !== undefined) updateQiUI();
                     
-                    const lerp = 0.45;
+                    const lerp = 0.55;
                     opponentDisplayX += (opponentTargetX - opponentDisplayX) * lerp;
                     opponentDisplayY += (opponentTargetY - opponentDisplayY) * lerp;
                     opponent.x = opponentDisplayX;
@@ -4455,6 +4437,7 @@
                     const moveCfg = MOVES[p1.attackType];
                     if (moveCfg) {
                         if (moveCfg.type === 'projectile') { 
+                            p1.attackWindup = 0;
                             p1.attackRecovery = moveCfg.recovery; 
                             const isSuper = p1.qi >= 100; 
                             if (isSuper) {
@@ -4483,6 +4466,7 @@
                     const moveCfg2 = MOVES[p2.attackType];
                     if (moveCfg2) {
                         if (moveCfg2.type === 'projectile') { 
+                            p2.attackWindup = 0;
                             p2.attackRecovery = moveCfg2.recovery; 
                             const isSuper2 = p2.qi >= 100; 
                             if (isSuper2) {
@@ -4632,17 +4616,16 @@
         document.getElementById('copyBtn').addEventListener('click', copyRoomName);
         document.getElementById('startBtn').addEventListener('click', () => { showGame(); restartGame(); });
         document.getElementById('muteBtn').addEventListener('click', toggleMute);
-        document.getElementById('copySyncLogBtn').addEventListener('click', () => {
-            const text = getSyncLogText();
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = document.getElementById('copySyncLogBtn');
-                btn.textContent = '已复制!';
-                setTimeout(() => btn.textContent = '复制日志', 1500);
-            });
-        });
-        document.getElementById('clearSyncLogBtn').addEventListener('click', () => {
-            syncLog = [];
-        });
+        document.getElementById('logToggleBtn').addEventListener('click', toggleLogPanel);
+
+        function toggleLogPanel() {
+            const panel = document.getElementById('logPanel');
+            const btn = document.getElementById('logToggleBtn');
+            const isOpen = panel.style.display !== 'none';
+            panel.style.display = isOpen ? 'none' : 'block';
+            if (panel.style.display === 'block') updateLogContent();
+            btn.classList.toggle('active', panel.style.display === 'block');
+        }
 
         // 服务器测试按钮事件
         document.getElementById('testServersBtn').addEventListener('click', async () => {
@@ -4707,10 +4690,14 @@
                 return;
             }
             
-            // Backquote (`) 键切换同步日志
-            if (e.code === 'Backquote') {
-                const panel = document.getElementById('syncLogPanel');
-                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            // Backquote (`) 或 F2 键切换日志面板
+            if (e.code === 'Backquote' || e.code === 'F2') {
+                const panel = document.getElementById('logPanel');
+                const btn = document.getElementById('logToggleBtn');
+                const isOpen = panel.style.display !== 'none';
+                panel.style.display = isOpen ? 'none' : 'block';
+                if (panel.style.display === 'block') updateLogContent();
+                btn.classList.toggle('active', panel.style.display === 'block');
                 e.preventDefault();
                 return;
             }
